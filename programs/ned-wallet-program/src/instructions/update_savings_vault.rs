@@ -1,5 +1,5 @@
 use crate::errors::savings::SavingsAccountsError;
-use crate::state::savings::{AccountType, UserSavingsManager, SAVINGS_PDA};
+use crate::state::savings::{SpareType, UserSavingsManager, SAVINGS_PDA};
 use crate::utils::savings::{get_name_array, name_is_empty};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Mint};
@@ -33,7 +33,7 @@ pub fn handler(
     ctx: Context<UpdateSavingsAccountVault>,
     _identifier: [u8;22],
     new_name:Vec<u8>,
-    account_type: AccountType,
+    spare_type: SpareType,
 ) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&new_name) {
@@ -50,7 +50,7 @@ pub fn handler(
         if let Some(account_found) = account {
             account_found.name = get_name_array(&new_name);
             account_found.name_length = new_name.len() as u8;
-            account_found.account_type = account_type as u8;
+            account_found.spare_type = spare_type as u8;
             Ok(())
         } else {
             return Err(error!(SavingsAccountsError::AccountNotFound));

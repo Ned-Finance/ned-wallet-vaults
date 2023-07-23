@@ -1,4 +1,4 @@
-use crate::state::savings::{SAVINGS_PDA, UserSavingsManager, AccountType};
+use crate::state::savings::{SAVINGS_PDA, UserSavingsManager, SpareType};
 use crate::errors::savings::SavingsAccountsError;
 use crate::utils::savings::{name_is_empty, get_name_array};
 
@@ -43,7 +43,7 @@ pub struct CreateSavingsVault<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<CreateSavingsVault>, name: Vec<u8>, identifier:[u8;22], account_type: AccountType) -> Result<()> {
+pub fn handler(ctx: Context<CreateSavingsVault>, name: Vec<u8>, identifier:[u8;22], spare_type: SpareType) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&name) {
         return Err(error!(SavingsAccountsError::AccountNameEmpty));
@@ -57,14 +57,11 @@ pub fn handler(ctx: Context<CreateSavingsVault>, name: Vec<u8>, identifier:[u8;2
     if data_account_loaded.is_ok() {
 
         let vault_account = &mut ctx.accounts.vault_account;
-
+        
         let data_account = &mut data_account_loaded.as_mut().unwrap();
-
         data_account.owner = ctx.accounts.owner.key();
 
         let user_accounts = &mut data_account.accounts;
-        
-
         let first_available_slot_index = user_accounts.iter().position(|x| x.pub_key == default_pubkey);
 
         if first_available_slot_index.is_some() {
@@ -75,7 +72,7 @@ pub fn handler(ctx: Context<CreateSavingsVault>, name: Vec<u8>, identifier:[u8;2
                 
                 account_to_replace.name = get_name_array(&name);
                 account_to_replace.name_length = (&name).len() as u8;
-                account_to_replace.account_type = account_type as u8;
+                account_to_replace.spare_type = spare_type as u8;
                 account_to_replace.identifier = identifier;
 
                 return Ok(());

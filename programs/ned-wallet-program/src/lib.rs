@@ -6,7 +6,7 @@ pub mod utils;
 use anchor_lang::prelude::*;
 
 use crate::instructions::*;
-use crate::state::savings::AccountType;
+use crate::state::savings::SpareType;
 
 declare_id!("5J8oWg8KbXvNqe64tpzCsbUdtVpBiHn6roFRrQ73FNMQ");
 
@@ -19,7 +19,7 @@ pub mod ned_wallet_program {
         ctx: Context<CreateSavingsVault>,
         name: Vec<u8>,
         identifier: [u8; 22],
-        account_type: AccountType,
+        account_type: SpareType,
     ) -> Result<()> {
         create_savings_vault::handler(ctx, name, identifier, account_type)
     }
@@ -28,7 +28,7 @@ pub mod ned_wallet_program {
         ctx: Context<UpdateSavingsAccountVault>,
         identifier: [u8; 22],
         new_name: Vec<u8>,
-        account_type: AccountType,
+        account_type: SpareType,
     ) -> Result<()> {
         update_savings_vault::handler(ctx, identifier, new_name, account_type)
     }

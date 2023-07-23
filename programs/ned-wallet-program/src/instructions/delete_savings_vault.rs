@@ -52,7 +52,7 @@ pub fn handler(
             .find(|x| x.pub_key.key() == vault_account.key());
         if let Some(account_found) = account {
             account_found.name = [0;30];
-            account_found.account_type = 0;
+            account_found.spare_type = 0;
             account_found.pub_key = pubkey!("11111111111111111111111111111111");
             account_found.name_length = 0;
 

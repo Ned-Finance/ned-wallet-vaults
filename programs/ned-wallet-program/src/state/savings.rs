@@ -3,12 +3,11 @@ use anchor_lang::prelude::*;
 pub const SAVINGS_PDA: &[u8] = b"SAVINGS_PDA";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq, Debug)]
-pub enum AccountType {
-    MANUAL = 1,
-    SPARE = 2,
-    SPARE2X = 3,
-    SPARE3X = 4,
-    AUTOMATIC = 5,
+pub enum SpareType {
+    NONE = 0,
+    SPARE = 1,
+    SPARE2X = 2,
+    SPARE3X = 3,
 }
 
 #[zero_copy]
@@ -17,12 +16,13 @@ pub struct SavingAccount {
     pub name: [u8; 30],
     pub name_length: u8,
     pub pub_key: Pubkey,
-    pub account_type: u8,
+    pub spare_type: u8,
+    pub automatic_days_period: u8,
     pub identifier: [u8; 22],
 }
 
 impl SavingAccount {
-    pub const SIZE: usize = 30 + 1 + 32 + 1 + 22;
+    pub const SIZE: usize = 30 + 1 + 32 + 1 + 1 + 22;
 }
 
 #[account(zero_copy)]

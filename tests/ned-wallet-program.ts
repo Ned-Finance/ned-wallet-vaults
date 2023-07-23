@@ -45,7 +45,6 @@ describe("ned-wallet-program", () => {
       6
     ) : currentMint
 
-    console.log('accountName', accountName)
     try {
 
       const [vaultAccount,] = PublicKey.findProgramAddressSync(
@@ -54,7 +53,7 @@ describe("ned-wallet-program", () => {
       );
 
       const tx = await program.methods
-        .createSavingsVault(accountNameBuffer, identifierBuffer, { manual: {} })
+        .createSavingsVault(accountNameBuffer, identifierBuffer, { none: {} })
         .accounts({
           owner: provider.publicKey,
           dataAccount,
@@ -78,7 +77,6 @@ describe("ned-wallet-program", () => {
         const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
         return nameBufferSlice.toString() == accountName
       })
-      console.log('savingsVault', savingsVault)
 
       assert.isTrue(savingsVault != undefined)
       assert.strictEqual(savingsVault.nameLength, accountName.length);
@@ -131,10 +129,8 @@ describe("ned-wallet-program", () => {
       accountName = "New account"
       accountNameBuffer = Buffer.from(accountName)
 
-      console.log('updating -->', savingsVault.identifier)
-
       const tx = await program.methods
-        .updateSavingsVault(savingsVault.identifier, accountNameBuffer, { spare: {} })
+        .updateSavingsVault(savingsVault.identifier, accountNameBuffer, { none: {} })
         .accounts({
           owner: provider.publicKey,
           dataAccount,
@@ -154,7 +150,6 @@ describe("ned-wallet-program", () => {
         const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
         return nameBufferSlice.toString() == accountName
       })
-      console.log('savingsVault', savingsVault)
 
       assert.isTrue(savingsVault != undefined)
       assert.strictEqual(savingsVault.nameLength, accountName.length);
@@ -199,7 +194,8 @@ describe("ned-wallet-program", () => {
       const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
       return nameBufferSlice.toString() == accountName
     })
-    console.log('savingsVault', savingsVault)
+
+    assert.isTrue(savingsVault == undefined)
 
   });
 
