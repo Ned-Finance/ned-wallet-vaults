@@ -1,6 +1,6 @@
-use crate::errors::savings::SavingsAccountsError;
-use crate::state::savings::{SpareType, UserSavingsManager, SAVINGS_PDA};
-use crate::utils::savings::{get_name_array, name_is_empty};
+use crate::errors::vaults::VaultsAccountsError;
+use crate::state::vaults::{SpareType, VaultManager, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT};
+use crate::utils::vaults::{get_name_array, name_is_empty};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Mint};
 
@@ -12,19 +12,19 @@ pub struct UpdateSavingsAccountVault<'info> {
 
     #[account(
         mut,
-        seeds = [SAVINGS_PDA, owner.key.as_ref()],
+        seeds = [VAULTS_PDA_DATA, owner.key.as_ref()],
         bump,
     )]
-    pub data_account: AccountLoader<'info, UserSavingsManager>,
+    pub data_account: AccountLoader<'info, VaultManager>,
 
     pub mint: Account<'info, Mint>, 
 
     #[account(
         mut,
-        seeds = [SAVINGS_PDA, owner.key.as_ref(), &identifier],
+        seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
         token::mint = mint, 
-        token::authority = owner,
+        token::authority = data_account,
     )]
     pub vault_account: Account<'info, TokenAccount>,
 }
@@ -37,7 +37,7 @@ pub fn handler(
 ) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&new_name) {
-        return Err(error!(SavingsAccountsError::AccountNameEmpty));
+        return Err(error!(VaultsAccountsError::AccountNameEmpty));
     }
 
     let vault_account = &ctx.accounts.vault_account;
@@ -53,9 +53,9 @@ pub fn handler(
             account_found.spare_type = spare_type as u8;
             Ok(())
         } else {
-            return Err(error!(SavingsAccountsError::AccountNotFound));
+            return Err(error!(VaultsAccountsError::AccountNotFound));
         }
     } else {
-        return Err(error!(SavingsAccountsError::ActionNotAllowed));
+        return Err(error!(VaultsAccountsError::ActionNotAllowed));
     }
 }

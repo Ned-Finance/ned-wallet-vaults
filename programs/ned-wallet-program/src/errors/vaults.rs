@@ -1,8 +1,7 @@
-
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum SavingsAccountsError {
+pub enum VaultsAccountsError {
     #[msg("This account was already initialized")]
     AlreadyInitialized,
     #[msg("Max accounts reached")]

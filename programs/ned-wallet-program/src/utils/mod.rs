@@ -1,1 +1,1 @@
-pub mod savings;
+pub mod vaults;

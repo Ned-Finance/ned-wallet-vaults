@@ -1,10 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program, AnchorError } from "@coral-xyz/anchor";
+import { AnchorError, Program } from "@coral-xyz/anchor";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import { assert } from "chai";
+import * as shortuuid from 'short-uuid';
 import { NedWalletProgram } from "../target/types/ned_wallet_program";
-import { PublicKey, Keypair } from "@solana/web3.js";
-import { assert, expect } from "chai";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import * as shortuuid from 'short-uuid'
 
 
 describe("ned-wallet-program", () => {
@@ -15,25 +15,31 @@ describe("ned-wallet-program", () => {
   const connection = anchor.getProvider().connection
   const provider = anchor.workspace.NedWalletProgram.provider
 
-  // const currentMint = new PublicKey("AmBD9hM7DwztwLiXgU3zVG7cdnwXxfoecYdCmFey2JNS")
-  const currentMint = null
+  const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU")
+  // const currentMint = null
 
   let accountName = (Math.random() + 1).toString(36).substring(2); //'Account 1'
   let accountNameBuffer = Buffer.from(accountName)
 
-  const SAVINGS_PDA_SEED = Buffer.from("SAVINGS_PDA")
+  const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
+  const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
 
   let savingsVault = null
 
   let mint = null
 
+  const identifier = shortuuid.generate()
+  const identifierBuffer = Buffer.from(identifier)
+
   const [dataAccount,] = PublicKey.findProgramAddressSync(
-    [SAVINGS_PDA_SEED, provider.publicKey.toBuffer()],
+    [VAULTS_PDA_DATA, provider.publicKey.toBuffer()],
     program.programId
   );
 
-  const identifier = shortuuid.generate()
-  const identifierBuffer = Buffer.from(identifier)
+  const [vaultAccount,] = PublicKey.findProgramAddressSync(
+    [VAULTS_PDA_ACCOUNT, provider.publicKey.toBuffer(), identifierBuffer],
+    program.programId
+  );
 
   it("Create a new account", async () => {
 
@@ -47,13 +53,8 @@ describe("ned-wallet-program", () => {
 
     try {
 
-      const [vaultAccount,] = PublicKey.findProgramAddressSync(
-        [SAVINGS_PDA_SEED, provider.publicKey.toBuffer(), identifierBuffer],
-        program.programId
-      );
-
       const tx = await program.methods
-        .createSavingsVault(accountNameBuffer, identifierBuffer, { none: {} })
+        .createVault(accountNameBuffer, identifierBuffer, { none: {} })
         .accounts({
           owner: provider.publicKey,
           dataAccount,
@@ -69,7 +70,7 @@ describe("ned-wallet-program", () => {
 
       console.log("Your transaction signature", tx);
 
-      const account = await program.account.userSavingsManager.fetch(
+      const account = await program.account.vaultManager.fetch(
         dataAccount
       );
 
@@ -77,6 +78,7 @@ describe("ned-wallet-program", () => {
         const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
         return nameBufferSlice.toString() == accountName
       })
+      console.log('create savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
 
       assert.isTrue(savingsVault != undefined)
       assert.strictEqual(savingsVault.nameLength, accountName.length);
@@ -108,7 +110,7 @@ describe("ned-wallet-program", () => {
   it("Get number of available accounts", async () => {
 
 
-    const account = await program.account.userSavingsManager.fetch(
+    const account = await program.account.vaultManager.fetch(
       dataAccount
     );
 
@@ -126,11 +128,11 @@ describe("ned-wallet-program", () => {
   it("Update account vault", async () => {
     try {
 
-      accountName = "New account"
+      accountName = "New account" + (Math.random() + 1).toString(36).substring(2)
       accountNameBuffer = Buffer.from(accountName)
 
       const tx = await program.methods
-        .updateSavingsVault(savingsVault.identifier, accountNameBuffer, { none: {} })
+        .updateVault(identifierBuffer, accountNameBuffer, { spare: {} })
         .accounts({
           owner: provider.publicKey,
           dataAccount,
@@ -142,7 +144,7 @@ describe("ned-wallet-program", () => {
 
       console.log("Your transaction signature", tx);
 
-      const account = await program.account.userSavingsManager.fetch(
+      const account = await program.account.vaultManager.fetch(
         dataAccount
       );
 
@@ -172,8 +174,10 @@ describe("ned-wallet-program", () => {
       provider.publicKey
     )
 
+    console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
+
     const tx = await program.methods
-      .deleteSavingsVault(savingsVault.identifier)
+      .deleteVault(identifierBuffer)
       .accounts({
         owner: provider.publicKey,
         dataAccount,
@@ -186,7 +190,7 @@ describe("ned-wallet-program", () => {
 
     console.log("Your transaction signature", tx);
 
-    const account = await program.account.userSavingsManager.fetch(
+    const account = await program.account.vaultManager.fetch(
       dataAccount
     );
 
