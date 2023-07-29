@@ -50,8 +50,6 @@ pub fn handler(
         let accounts = &mut data_account.accounts;
         
         let account = accounts.iter_mut().find(|x| x.pub_key.key() == vault_account.key());
-        // .find();
-        // msg!("account_index{}", account_index.);
         
         if let Some(account) = account {
 
@@ -59,6 +57,7 @@ pub fn handler(
             account.spare_type = 0;
             account.pub_key = pubkey!("11111111111111111111111111111111");
             account.name_length = 0;
+            account.identifier = [0;22];;
             
             drop(data_account);
 

@@ -78,7 +78,7 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
             account_to_replace.pub_key = vault_account.key();
             account_to_replace.token_pub_key = mint.key();
             
-            account_to_replace.name = get_name_array(&name);
+            account_to_replace.name = get_name_array(name.clone());
             account_to_replace.name_length = (&name).len() as u8;
             account_to_replace.spare_type = spare_type as u8;
             account_to_replace.identifier = identifier;
