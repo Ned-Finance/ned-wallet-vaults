@@ -8,7 +8,7 @@ ned_wallet_program = "5J8oWg8KbXvNqe64tpzCsbUdtVpBiHn6roFRrQ73FNMQ"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "/Users/marco/.config/solana/id.json"
 
 [scripts]

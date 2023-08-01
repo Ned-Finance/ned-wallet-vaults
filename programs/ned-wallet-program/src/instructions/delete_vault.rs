@@ -1,7 +1,7 @@
 use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::{VaultManager, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{TokenAccount, Mint, Token};
+use anchor_spl::token::{self, TokenAccount, Mint, Token, Transfer};
 use anchor_lang::solana_program::pubkey;
 
 #[derive(Accounts)]
@@ -38,9 +38,21 @@ pub struct DeleteSavingsAccountVault<'info> {
     pub token_program: Program<'info, Token>,
 }
 
+impl <'info> DeleteSavingsAccountVault<'info> {
+    fn transfer_usdc(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
+            from: self.vault_account.to_account_info().clone(),
+            to: self.user_token_account.to_account_info().clone(),
+            authority: self.data_account.to_account_info().clone(),
+        };
+        CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
+    }
+
+}
+
 pub fn handler(
     ctx: Context<DeleteSavingsAccountVault>,
-    identifier:[u8;22],
+    _identifier:[u8;22],
 ) -> Result<()> {
 
     let vault_account = &ctx.accounts.vault_account;
@@ -57,7 +69,7 @@ pub fn handler(
             account.spare_type = 0;
             account.pub_key = pubkey!("11111111111111111111111111111111");
             account.name_length = 0;
-            account.identifier = [0;22];;
+            account.identifier = [0;22];
             
             drop(data_account);
 
@@ -83,6 +95,15 @@ pub fn handler(
             let signer = &[&seeds[..]];
 
             let cpi_program = ctx.accounts.token_program.to_account_info().clone();
+
+            token::transfer(
+                ctx.accounts
+                    .transfer_usdc()
+                    .with_signer(signer),
+                    vault_account.amount,
+            )?;
+    
+
             let cpi_ctx = CpiContext::new_with_signer(
                 cpi_program,
                 close_instruction,

@@ -39,4 +39,13 @@ pub mod ned_wallet_program {
     ) -> Result<()> {
         delete_vault::handler(ctx, identifier)
     }
+
+    pub fn withdraw_from_vault(
+        ctx: Context<WithdrawFromVault>,
+        identifier: [u8; 22],
+        amount: u64,
+    ) -> Result<()> {
+        withdraw_from_vault::handler(ctx, identifier, amount)
+        // withdraw_from_vault::handler(ctx, identifier)
+    }
 }
