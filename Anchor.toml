@@ -2,7 +2,7 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-ned_wallet_program = "5J8oWg8KbXvNqe64tpzCsbUdtVpBiHn6roFRrQ73FNMQ"
+ned_wallet_vault = "NEDSye1RDFLw6kmgHaaaF57NjNdD9WMHGvoyuLX9Kg6"
 
 [registry]
 url = "https://api.apr.dev"

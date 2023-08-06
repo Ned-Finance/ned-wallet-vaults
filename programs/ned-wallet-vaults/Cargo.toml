@@ -1,12 +1,12 @@
 [package]
-name = "ned-wallet-program"
+name = "ned-wallet-vaults"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "ned_wallet_program"
+name = "ned_wallet_vaults"
 
 [features]
 no-entrypoint = []

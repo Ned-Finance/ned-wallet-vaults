@@ -52,7 +52,7 @@ impl <'info> WithdrawFromVault<'info> {
 
 pub fn handler(
     ctx: Context<WithdrawFromVault>,
-    identifier: [u8;22],
+    _identifier: [u8;22],
     amount:u64
 ) -> Result<()> {
 

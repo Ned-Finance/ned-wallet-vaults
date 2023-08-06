@@ -8,10 +8,10 @@ use anchor_lang::prelude::*;
 use crate::instructions::*;
 use crate::state::vaults::SpareType;
 
-declare_id!("5J8oWg8KbXvNqe64tpzCsbUdtVpBiHn6roFRrQ73FNMQ");
+declare_id!("NEDSye1RDFLw6kmgHaaaF57NjNdD9WMHGvoyuLX9Kg6");
 
 #[program]
-pub mod ned_wallet_program {
+pub mod ned_wallet_vaults {
 
     use super::*;
 

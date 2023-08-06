@@ -4,10 +4,10 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getOrCreateA
 import { PublicKey } from "@solana/web3.js";
 import { assert } from "chai";
 import * as shortuuid from 'short-uuid';
-import { NedWalletProgram } from "../target/types/ned_wallet_program";
+import { NedWalletProgram } from "../target/types/ned_wallet_vaults";
 
 
-describe("ned-wallet-program", () => {
+describe("ned-wallet-vaults", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
