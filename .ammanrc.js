@@ -10,6 +10,12 @@ module.exports = {
                 cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
             },
             {
+                label: "Meteora",
+                accountId: "24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi",
+                executable: true,
+                cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
+            },
+            {
                 label: "USD Coin",
                 accountId: "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
                 cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
