@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorError, Program } from "@coral-xyz/anchor";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getAccount, getOrCreateAssociatedTokenAccount, mintTo, transfer } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { assert } from "chai";
 import * as shortuuid from 'short-uuid';
@@ -12,17 +12,18 @@ describe("ned-wallet-vaults", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
   const program = anchor.workspace.NedWalletVaults as Program<NedWalletVaults>;
+  // const savingsProgram = anchor.workspace.NedWalletVaultsSavings as Program<NedWalletVaultsSavings>;
   const connection = anchor.getProvider().connection
   const provider = anchor.workspace.NedWalletVaults.provider
 
-  const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU")
+  // const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
+  const currentMint = new PublicKey("So11111111111111111111111111111111111111112") // SOL
   // const currentMint = null
 
   let accountName = (Math.random() + 1).toString(36).substring(2); //'Account 1'
   let accountNameBuffer = Buffer.from(accountName)
 
   const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
-  const VAULTS_PDA_ACCOUNT_OWNER = Buffer.from("VAULTS_PDA_ACCOUNT_OWNER")
   const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
 
   let savingsVault = null
@@ -42,18 +43,122 @@ describe("ned-wallet-vaults", () => {
     program.programId
   );
 
-  // console.log("dataAccount", dataAccount.toBase58())
-  // console.log("vaultAccount", vaultAccount.toBase58())
+  let mintAta = null
 
-  it("Create a new account", async () => {
+  let decimals = 9
+
+  before(async () => {
 
     mint = !currentMint ? await createMint(
       connection,
       provider.wallet.payer,
       provider.publicKey,
       provider.publicKey,
-      6
+      decimals
     ) : currentMint
+
+    mintAta = await getOrCreateAssociatedTokenAccount(
+      connection,
+      provider.wallet.payer,
+      mint,
+      provider.publicKey
+    )
+
+    // console.log(
+    //   provider.wallet.payer,
+    //   mintAta,
+    //   provider.publicKey,
+    //   SystemProgram.programId)
+
+    // const tx = await closeAccount(
+    //   connection,
+    //   provider.wallet.payer,
+    //   mintAta.address,
+    //   provider.publicKey,
+    //   provider.publicKey
+    // )
+    // console.log('tx', tx)
+
+
+    if (!currentMint) {
+      mintTo(
+        connection,
+        provider.wallet.payer,
+        mint,
+        mintAta.address,
+        provider.publicKey,
+        100 * Math.pow(10, decimals)
+      )
+    } else {
+
+      // console.log('mintAta.address', mintAta.address)
+      // const fundTransfer = await transfer(
+      //   connection,
+      //   provider.wallet.payer,
+      //   provider.publicKey,
+      //   mintAta.address,
+      //   provider.wallet.payer,
+      //   2.5 * Math.pow(10, decimals)
+      // )
+      // console.log("fundTransfer", provider.publicKey)
+      // const tx = await createWrappedNativeAccount(
+      //   connection,
+      //   provider.wallet.payer,
+      //   SystemProgram.programId,
+      //   2.5 * Math.pow(10, 9)
+      // )
+      // console.log('tx', tx)
+
+
+      // const transaction = new Transaction().add(
+      //   SystemProgram.transfer({
+      //     fromPubkey: provider.publicKey,
+      //     toPubkey: mintAta.address,
+      //     lamports: 2.5 * Math.pow(10, 9),
+      //   }),
+      // );
+
+      // const tx = await sendAndConfirmTransaction(connection, transaction, [provider.wallet.payer]);
+      // console.log('tx', tx)
+
+    }
+
+    // const solATA = getAssociatedTokenAddressSync(
+    //   mint,
+    //   provider.publicKey,
+    //   false,
+    //   TOKEN_PROGRAM_ID,
+    //   ASSOCIATED_TOKEN_PROGRAM_ID
+    // );
+
+    // const solATAAccount = await getAccount(
+    //   connection,
+    //   solATA
+    // )
+
+    // console.log('solATAAccount', solATAAccount)
+
+    // if (!solATAAccount.isInitialized) {
+    //   createWrappedNativeAccount(
+    //     connection,
+    //     provider.wallet.payer,
+    //     provider.publicKey,
+    //     1 * Math.pow(10, 9)
+    //   )
+    // } else {
+
+    // }
+
+
+
+  })
+
+  // console.log("dataAccount", dataAccount.toBase58())
+  // console.log("vaultAccount", vaultAccount.toBase58())
+
+
+
+  it("Create a new account", async () => {
 
     try {
 
@@ -110,6 +215,138 @@ describe("ned-wallet-vaults", () => {
     }
 
   });
+
+  it("deposit money to fund", async () => {
+
+    try {
+
+
+      console.log('mintAta', mintAta)
+
+      const account = await program.account.vaultManager.fetch(
+        dataAccount
+      );
+
+      const firstAccount = account.accounts[0].pubKey
+
+      const amount = 2 * Math.pow(10, 9)
+
+      const transferTx = await transfer(
+        connection,
+        provider.wallet.payer,
+        mintAta.address,
+        firstAccount,
+        provider.publicKey,
+        amount
+      )
+
+
+      const firstAccountFetched = await getAccount(connection, firstAccount)
+      console.log('amount-->', firstAccountFetched.amount)
+
+      assert.isTrue(Number(firstAccountFetched.amount) == amount);
+    } catch (error) {
+      console.log('error', error)
+    }
+
+  })
+
+  it("deposit savings", async () => {
+    try {
+
+      // pub vault_program: Program<'info, MercurialVault>, // Vault program
+      // pub vault: Box<Account<'info, Vault>>, // Vault address
+      // pub token_vault: UncheckedAccount<'info>, // Token vault 
+      // pub vault_lp_mint: Box<Account<'info, Mint>>,
+      // pub user: UncheckedAccount<'info>,
+      // pub user_token: UncheckedAccount<'info>,
+      // pub user_lp: Box<Account<'info, TokenAccount>>,
+      // pub owner: Signer<'info>,
+      // pub token_program: Program<'info, Token>,
+
+      //     vault: ctx.accounts.vault.to_account_info(),
+      //     token_vault: ctx.accounts.token_vault.to_account_info(),
+      //     lp_mint: ctx.accounts.vault_lp_mint.to_account_info(),
+      //     user: ctx.accounts.user.to_account_info(),
+      //     user_token: ctx.accounts.user_token.to_account_info(),
+      //     user_lp: ctx.accounts.user_lp.to_account_info(),
+      //     token_program: ctx.accounts.token_program.to_account_info(),
+
+
+      const account = await program.account.vaultManager.fetch(
+        dataAccount
+      );
+      const firstAccount = account.accounts[0].pubKey
+
+      console.log('firstAccount', firstAccount)
+
+      const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
+
+      console.log('dataAccount', dataAccount)
+      console.log('firstAccount', firstAccount)
+
+      const userLpToken = await getOrCreateAssociatedTokenAccount(
+        connection,
+        provider.wallet.payer,
+        vaultLpMint,
+        firstAccount,
+        true
+      )
+
+      //   let (vault, _vault_bump) = Pubkey::find_program_address(
+      //     &[b"vault".as_ref(), token_mint.as_ref(), base.as_ref()],
+      //     &mercurial_vault::id(),
+      // );
+
+      const vaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
+      const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT")
+
+      const [tokenVault,] = PublicKey.findProgramAddressSync(
+        [Buffer.from("token_vault"), vault.toBuffer()],
+        vaultProgram
+      );
+
+
+      // let (token_vault, _token_vault_bump) = Pubkey::find_program_address(
+      //     &[b"token_vault".as_ref(), vault.as_ref()],
+      //     &mercurial_vault::id(),
+      // );
+
+
+      // const amount = 1
+
+      console.log('userToken', userLpToken.address)
+      console.log('vaultLpMint', vaultLpMint)
+
+      const tx = await program.methods
+        .investOnSavings(identifierBuffer, new anchor.BN(1 * Math.pow(10, 9)))
+        .accounts({
+          owner: provider.publicKey,
+          dataAccount,
+          vaultAccount: firstAccount,
+          mint,
+          vaultProgram,
+          vault,
+          tokenVault,
+          vaultLpMint,
+          user: dataAccount,
+          userToken: firstAccount,
+          userLp: userLpToken.address,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .signers([provider.wallet.payer])
+        .rpc();
+
+      console.log("Your transaction signature", tx);
+
+
+
+    } catch (_error: any) {
+      console.log(_error)
+      assert.fail("Unexpected error type, console.log _error variable")
+
+    }
+  })
 
   xit("Get number of available accounts", async () => {
 
@@ -170,13 +407,6 @@ describe("ned-wallet-vaults", () => {
 
   xit("Delete account vault", async () => {
 
-    const mintAta = await getOrCreateAssociatedTokenAccount(
-      connection,
-      provider.wallet.payer,
-      mint,
-      provider.publicKey
-    )
-
     console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
 
     const tx = await program.methods
@@ -203,6 +433,62 @@ describe("ned-wallet-vaults", () => {
     })
 
     assert.isTrue(savingsVault == undefined)
+
+  });
+
+  it("Delete all account vault", async () => {
+
+    // console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
+
+    try {
+
+      const { accounts } = await program.account.vaultManager.fetch(
+        dataAccount
+      );
+
+      const accountsToDelete = (accounts as any[])
+        .filter(x => {
+          return x.nameLength > 0
+        })
+
+      // .forEach(async x => {
+      for (let index = 0; index < accountsToDelete.length; index++) {
+        const account = accountsToDelete[index];
+
+        // console.log('account-->', account.pubKey, account.tokenPubKey)
+
+        const tx = await program.methods
+          .deleteVault(account.identifier)
+          .accounts({
+            owner: provider.publicKey,
+            dataAccount,
+            vaultAccount: account.pubKey,
+            mint: account.tokenPubKey,
+            userTokenAccount: mintAta.address
+          })
+          .signers([provider.wallet.payer])
+          .rpc();
+
+        // console.log("Your transaction signature", tx);
+
+      }
+
+
+
+      const updatedAccount = await program.account.vaultManager.fetch(
+        dataAccount
+      );
+
+      const unDeletedAccounts = updatedAccount.accounts.filter(x => {
+        return x.nameLength > 0
+        // const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
+        // return nameBufferSlice.toString() == accountName
+      })
+
+      assert.isTrue(unDeletedAccounts.length == 0)
+    } catch (error) {
+      console.log(error)
+    }
 
   });
 

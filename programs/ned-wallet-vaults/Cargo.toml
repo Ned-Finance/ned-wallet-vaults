@@ -20,4 +20,4 @@ anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl = "0.26.0"
 bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"]}
 solana-program = "1.16.0"
-ned-wallet-vaults-savings = { path = "../ned-wallet-vaults-savings", features = ["cpi"]}
+mercurial-vault = { version = "0.4.7", features = ["cpi"] }

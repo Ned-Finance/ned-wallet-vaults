@@ -1,6 +1,3 @@
 {
-    "rust-analyzer.linkedProjects": [
-        "./programs/ned-wallet-vaults/Cargo.toml",
-        "./programs/ned-wallet-vaults-savings/Cargo.toml"
-    ]
+    "rust-analyzer.linkedProjects": ["./programs/ned-wallet-vaults/Cargo.toml"]
 }

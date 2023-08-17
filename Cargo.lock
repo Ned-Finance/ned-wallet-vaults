@@ -1269,16 +1269,6 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
- "ned-wallet-vaults-savings",
- "solana-program",
-]
-
-[[package]]
-name = "ned-wallet-vaults-savings"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
  "mercurial-vault",
  "solana-program",
 ]

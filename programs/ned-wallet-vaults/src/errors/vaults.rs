@@ -12,4 +12,8 @@ pub enum VaultsAccountsError {
     AccountNotFound,
     #[msg("Action not allowed")]
     ActionNotAllowed,
+    #[msg("Error when depositing on protocol")]
+    DepositSavingsError,
+    #[msg("Error when withdrawal from protocol")]
+    WithdrawalSavingsError,
 }

@@ -51,9 +51,6 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
     }
 
     let default_pubkey  = pubkey!("11111111111111111111111111111111"); 
-        
-    // let data_account_loaded = &mut ctx.accounts.data_account.load_init();
-    
 
     let data_account = &mut match ctx.accounts.data_account.load_init() {
         Ok(result) => result,
@@ -64,7 +61,6 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
     let vault_account = &mut ctx.accounts.vault_account;
     let mint = &mut ctx.accounts.mint;
     
-    // let data_account = &mut data_account_loaded.as_mut().unwrap();
     data_account.owner = ctx.accounts.owner.key();
 
     let user_accounts = &mut data_account.accounts;
