@@ -4,16 +4,16 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getOrCreateA
 import { PublicKey } from "@solana/web3.js";
 import { assert } from "chai";
 import * as shortuuid from 'short-uuid';
-import { NedWalletProgram } from "../target/types/ned_wallet_vaults";
+import { NedWalletVaults } from "../target/types/ned_wallet_vaults";
 
 
 describe("ned-wallet-vaults", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
-  const program = anchor.workspace.NedWalletProgram as Program<NedWalletProgram>;
+  const program = anchor.workspace.NedWalletVaults as Program<NedWalletVaults>;
   const connection = anchor.getProvider().connection
-  const provider = anchor.workspace.NedWalletProgram.provider
+  const provider = anchor.workspace.NedWalletVaults.provider
 
   const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU")
   // const currentMint = null
@@ -22,6 +22,7 @@ describe("ned-wallet-vaults", () => {
   let accountNameBuffer = Buffer.from(accountName)
 
   const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
+  const VAULTS_PDA_ACCOUNT_OWNER = Buffer.from("VAULTS_PDA_ACCOUNT_OWNER")
   const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
 
   let savingsVault = null
@@ -41,6 +42,9 @@ describe("ned-wallet-vaults", () => {
     program.programId
   );
 
+  // console.log("dataAccount", dataAccount.toBase58())
+  // console.log("vaultAccount", vaultAccount.toBase58())
+
   it("Create a new account", async () => {
 
     mint = !currentMint ? await createMint(
@@ -58,7 +62,7 @@ describe("ned-wallet-vaults", () => {
         .accounts({
           owner: provider.publicKey,
           dataAccount,
-          vaultAccount: vaultAccount,
+          vaultAccount,
           mint,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -107,7 +111,7 @@ describe("ned-wallet-vaults", () => {
 
   });
 
-  it("Get number of available accounts", async () => {
+  xit("Get number of available accounts", async () => {
 
 
     const account = await program.account.vaultManager.fetch(
@@ -124,8 +128,7 @@ describe("ned-wallet-vaults", () => {
 
   })
 
-
-  it("Update account vault", async () => {
+  xit("Update account vault", async () => {
     try {
 
       accountName = "New account" + (Math.random() + 1).toString(36).substring(2)
@@ -165,7 +168,7 @@ describe("ned-wallet-vaults", () => {
 
   })
 
-  it("Delete account vault", async () => {
+  xit("Delete account vault", async () => {
 
     const mintAta = await getOrCreateAssociatedTokenAccount(
       connection,

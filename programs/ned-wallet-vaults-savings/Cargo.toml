@@ -1,12 +1,12 @@
 [package]
-name = "ned-wallet-vaults"
+name = "ned-wallet-vaults-savings"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "ned_wallet_vaults"
+name = "ned_wallet_vaults_savings"
 
 [features]
 no-entrypoint = []
@@ -18,6 +18,5 @@ default = []
 [dependencies]
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl = "0.26.0"
-bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"]}
-solana-program = "1.16.0"
-ned-wallet-vaults-savings = { path = "../ned-wallet-vaults-savings", features = ["cpi"]}
+solana-program = "1.13.5"
+mercurial-vault = { version = "0.4.7", features = ["cpi"] }

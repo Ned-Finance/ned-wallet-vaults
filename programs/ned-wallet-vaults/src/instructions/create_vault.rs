@@ -1,4 +1,4 @@
-use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VaultManager, SpareType};
+use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER, VaultManager, VaultOwner, SpareType};
 use crate::errors::vaults::VaultsAccountsError;
 use crate::utils::vaults::{name_is_empty, get_name_array};
 
@@ -32,6 +32,7 @@ pub struct CreateVault<'info> {
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
         payer = owner,
+        // owner = vault_owner.key(),
         token::mint = mint, 
         token::authority = data_account,
     )]

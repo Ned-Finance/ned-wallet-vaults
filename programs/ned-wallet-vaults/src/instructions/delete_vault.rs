@@ -23,6 +23,7 @@ pub struct DeleteSavingsAccountVault<'info> {
         mut,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
+        owner = owner.key(),
         token::mint = mint, 
         token::authority = data_account,
     )]

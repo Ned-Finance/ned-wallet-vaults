@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 use crate::instructions::*;
 use crate::state::vaults::SpareType;
 
-declare_id!("NEDSye1RDFLw6kmgHaaaF57NjNdD9WMHGvoyuLX9Kg6");
+declare_id!("NEDrjAVUqMdZjpkJUPXeJe7SmfREW8pzLAFyhDUQhaJ");
 
 #[program]
 pub mod ned_wallet_vaults {

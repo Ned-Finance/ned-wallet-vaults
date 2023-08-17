@@ -2,13 +2,14 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
+ned-wallet-vaults-savings = "NEDj1Y2MffMphL8ivB7Wb9eQpytv2nASSgafA2WUAYU"
 ned_wallet_vault = "NEDSye1RDFLw6kmgHaaaF57NjNdD9WMHGvoyuLX9Kg6"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "Localnet"
 wallet = "/Users/marco/.config/solana/id.json"
 
 [scripts]
