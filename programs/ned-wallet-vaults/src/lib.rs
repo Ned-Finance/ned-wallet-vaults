@@ -55,4 +55,12 @@ pub mod ned_wallet_vaults {
     ) -> Result<()> {
         invest_on_savings::handler(ctx, indetifier, amount)
     }
+
+    pub fn withdraw_savings(
+        ctx: Context<WithdrawSavings>,
+        indetifier: [u8; 22],
+        amount: u64,
+    ) -> Result<()> {
+        withdraw_savings::handler(ctx, indetifier, amount)
+    }
 }

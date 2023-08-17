@@ -11,14 +11,12 @@ describe("ned-wallet-vaults", () => {
   // Configure the client to use the local cluster.
   anchor.setProvider(anchor.AnchorProvider.env());
 
+  console.log('NedWalletVaults', anchor.workspace)
+
   const program = anchor.workspace.NedWalletVaults as Program<NedWalletVaults>;
   // const savingsProgram = anchor.workspace.NedWalletVaultsSavings as Program<NedWalletVaultsSavings>;
   const connection = anchor.getProvider().connection
   const provider = anchor.workspace.NedWalletVaults.provider
-
-  // const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
-  const currentMint = new PublicKey("So11111111111111111111111111111111111111112") // SOL
-  // const currentMint = null
 
   let accountName = (Math.random() + 1).toString(36).substring(2); //'Account 1'
   let accountNameBuffer = Buffer.from(accountName)
@@ -26,12 +24,16 @@ describe("ned-wallet-vaults", () => {
   const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
   const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
 
-  let savingsVault = null
-
+  // const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
+  const currentMint = new PublicKey("So11111111111111111111111111111111111111112") // SOL
   let mint = null
+  let decimals = 9
+  let mintAta = null
 
   const identifier = shortuuid.generate()
   const identifierBuffer = Buffer.from(identifier)
+
+  let savingsVault = null
 
   const [dataAccount,] = PublicKey.findProgramAddressSync(
     [VAULTS_PDA_DATA, provider.publicKey.toBuffer()],
@@ -43,9 +45,17 @@ describe("ned-wallet-vaults", () => {
     program.programId
   );
 
-  let mintAta = null
 
-  let decimals = 9
+  // Start Meteora
+  const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
+  const vaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
+  const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT")
+
+  const [tokenVault,] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_vault"), vault.toBuffer()],
+    vaultProgram
+  );
+  // End Meteora
 
   before(async () => {
 
@@ -220,28 +230,19 @@ describe("ned-wallet-vaults", () => {
 
     try {
 
-
-      console.log('mintAta', mintAta)
-
-      const account = await program.account.vaultManager.fetch(
-        dataAccount
-      );
-
-      const firstAccount = account.accounts[0].pubKey
-
-      const amount = 2 * Math.pow(10, 9)
+      const amount = 0.2 * Math.pow(10, decimals)
 
       const transferTx = await transfer(
         connection,
         provider.wallet.payer,
         mintAta.address,
-        firstAccount,
+        savingsVault.pubKey,
         provider.publicKey,
         amount
       )
 
 
-      const firstAccountFetched = await getAccount(connection, firstAccount)
+      const firstAccountFetched = await getAccount(connection, savingsVault.pubKey)
       console.log('amount-->', firstAccountFetched.amount)
 
       assert.isTrue(Number(firstAccountFetched.amount) == amount);
@@ -251,95 +252,80 @@ describe("ned-wallet-vaults", () => {
 
   })
 
-  it("deposit savings", async () => {
+  it("deposit liquidity from savings", async () => {
     try {
-
-      // pub vault_program: Program<'info, MercurialVault>, // Vault program
-      // pub vault: Box<Account<'info, Vault>>, // Vault address
-      // pub token_vault: UncheckedAccount<'info>, // Token vault 
-      // pub vault_lp_mint: Box<Account<'info, Mint>>,
-      // pub user: UncheckedAccount<'info>,
-      // pub user_token: UncheckedAccount<'info>,
-      // pub user_lp: Box<Account<'info, TokenAccount>>,
-      // pub owner: Signer<'info>,
-      // pub token_program: Program<'info, Token>,
-
-      //     vault: ctx.accounts.vault.to_account_info(),
-      //     token_vault: ctx.accounts.token_vault.to_account_info(),
-      //     lp_mint: ctx.accounts.vault_lp_mint.to_account_info(),
-      //     user: ctx.accounts.user.to_account_info(),
-      //     user_token: ctx.accounts.user_token.to_account_info(),
-      //     user_lp: ctx.accounts.user_lp.to_account_info(),
-      //     token_program: ctx.accounts.token_program.to_account_info(),
-
-
-      const account = await program.account.vaultManager.fetch(
-        dataAccount
-      );
-      const firstAccount = account.accounts[0].pubKey
-
-      console.log('firstAccount', firstAccount)
-
-      const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
-
-      console.log('dataAccount', dataAccount)
-      console.log('firstAccount', firstAccount)
 
       const userLpToken = await getOrCreateAssociatedTokenAccount(
         connection,
         provider.wallet.payer,
         vaultLpMint,
-        firstAccount,
+        dataAccount,
         true
       )
 
-      //   let (vault, _vault_bump) = Pubkey::find_program_address(
-      //     &[b"vault".as_ref(), token_mint.as_ref(), base.as_ref()],
-      //     &mercurial_vault::id(),
-      // );
-
-      const vaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
-      const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT")
-
-      const [tokenVault,] = PublicKey.findProgramAddressSync(
-        [Buffer.from("token_vault"), vault.toBuffer()],
-        vaultProgram
-      );
-
-
-      // let (token_vault, _token_vault_bump) = Pubkey::find_program_address(
-      //     &[b"token_vault".as_ref(), vault.as_ref()],
-      //     &mercurial_vault::id(),
-      // );
-
-
-      // const amount = 1
-
       console.log('userToken', userLpToken.address)
-      console.log('vaultLpMint', vaultLpMint)
 
       const tx = await program.methods
-        .investOnSavings(identifierBuffer, new anchor.BN(1 * Math.pow(10, 9)))
+        .investOnSavings(identifierBuffer, new anchor.BN(0.2 * Math.pow(10, decimals)))
         .accounts({
           owner: provider.publicKey,
           dataAccount,
-          vaultAccount: firstAccount,
+          vaultAccount: savingsVault.pubKey,
           mint,
           vaultProgram,
           vault,
           tokenVault,
           vaultLpMint,
           user: dataAccount,
-          userToken: firstAccount,
+          userToken: savingsVault.pubKey,
           userLp: userLpToken.address,
           tokenProgram: TOKEN_PROGRAM_ID
         })
         .signers([provider.wallet.payer])
         .rpc();
 
-      console.log("Your transaction signature", tx);
+      console.log("Your deposit liquidity tx =", tx);
 
+    } catch (_error: any) {
+      console.log(_error)
+      assert.fail("Unexpected error type, console.log _error variable")
 
+    }
+  })
+
+  it("withdraw liquidity to savings", async () => {
+    try {
+
+      const userLpToken = await getOrCreateAssociatedTokenAccount(
+        connection,
+        provider.wallet.payer,
+        vaultLpMint,
+        dataAccount,
+        true
+      )
+
+      console.log('userToken', userLpToken.address, userLpToken.amount)
+
+      const tx = await program.methods
+        .withdrawSavings(identifierBuffer, new anchor.BN(userLpToken.amount))
+        .accounts({
+          owner: provider.publicKey,
+          dataAccount,
+          vaultAccount: savingsVault.pubKey,
+          mint,
+          vaultProgram,
+          vault,
+          tokenVault,
+          vaultLpMint,
+          user: dataAccount,
+          userToken: savingsVault.pubKey,
+          userLp: userLpToken.address,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .signers([provider.wallet.payer])
+        .rpc();
+
+      console.log("Your withdraw liquidity tx =", tx);
 
     } catch (_error: any) {
       console.log(_error)

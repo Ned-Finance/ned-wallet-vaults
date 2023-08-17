@@ -2,10 +2,8 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-ned_wallet_vaults_savings = "NEDNE4zjiduJKv6tAK7Lm7L1tgwYhJPArTk96hpAJKA"
 ned_wallet_vaults = "NEDrjAVUqMdZjpkJUPXeJe7SmfREW8pzLAFyhDUQhaJ"
 [programs.devnet]
-ned_wallet_vaults_savings = "NEDNE4zjiduJKv6tAK7Lm7L1tgwYhJPArTk96hpAJKA"
 ned_wallet_vaults = "NEDrjAVUqMdZjpkJUPXeJe7SmfREW8pzLAFyhDUQhaJ"
 
 [registry]

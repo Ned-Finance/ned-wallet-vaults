@@ -1,4 +1,4 @@
-use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER, VaultManager, VaultOwner, SpareType};
+use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, SpareType, VaultManager};
 use crate::errors::vaults::VaultsAccountsError;
 use crate::utils::vaults::{name_is_empty, get_name_array};
 

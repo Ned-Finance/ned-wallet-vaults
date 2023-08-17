@@ -7,9 +7,10 @@ use mercurial_vault::cpi::*;
 use mercurial_vault::state::Vault;
 use crate::utils::meteora::MercurialVault;
 
+
 #[derive(Accounts)]
 #[instruction(identifier: [u8;22])]
-pub struct InvestOnSavings<'info> {
+pub struct WithdrawSavings<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
@@ -57,15 +58,14 @@ pub struct InvestOnSavings<'info> {
 }
 
 pub fn handler(
-    ctx: Context<InvestOnSavings>,
+    ctx: Context<WithdrawSavings>,
     _identifier: [u8;22],
     amount:u64,
 ) -> Result<()> {
-
     let data_account = &mut ctx.accounts.data_account.load()?;
     if data_account.owner.key() == ctx.accounts.owner.key() {
 
-        msg!("Deposit started {}", amount);
+        msg!("Withdraw started {}", amount);
 
         let accounts = DepositWithdrawLiquidity {
             vault: ctx.accounts.vault.to_account_info(),
@@ -78,23 +78,25 @@ pub fn handler(
         };
 
         let (_account, bump) =
-                Pubkey::find_program_address(&[
-                    VAULTS_PDA_DATA,  
-                    ctx.accounts.owner.key.as_ref(), 
-                ], ctx.program_id);
+            Pubkey::find_program_address(&[
+                VAULTS_PDA_DATA,  
+                ctx.accounts.owner.key.as_ref(), 
+            ], ctx.program_id);
 
         let seeds = &[
-                VAULTS_PDA_DATA, 
-                ctx.accounts.owner.key.as_ref(),
-                &[bump]
-            ];
+            VAULTS_PDA_DATA, 
+            ctx.accounts.owner.key.as_ref(),
+            &[bump]
+        ];
+
+        // &[&[&[u8]]]
 
         let signer = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(ctx.accounts.vault_program.to_account_info(), accounts, signer);
-        let result = deposit(cpi_ctx, amount, 0);
+        let result = withdraw(cpi_ctx, amount, 0);
 
-        msg!("Deposit ended {}", amount);
+        msg!("Withdraw ended {}", amount);
 
         return result
 

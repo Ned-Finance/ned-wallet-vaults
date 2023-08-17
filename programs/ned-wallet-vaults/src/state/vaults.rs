@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 pub const VAULTS_PDA_DATA: &[u8] = b"VAULTS_PDA_DATA";
 pub const VAULTS_PDA_ACCOUNT: &[u8] = b"VAULTS_PDA_ACCOUNT";
-pub const VAULTS_PDA_ACCOUNT_OWNER: &[u8] = b"VAULTS_PDA_ACCOUNT_OWNER";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SpareType {
