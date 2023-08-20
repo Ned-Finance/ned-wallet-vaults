@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 pub const VAULTS_PDA_DATA: &[u8] = b"VAULTS_PDA_DATA";
 pub const VAULTS_PDA_ACCOUNT: &[u8] = b"VAULTS_PDA_ACCOUNT";
+pub const VAULTS_PDA_ACCOUNT_OWNER: &[u8] = b"VAULTS_PDA_ACCOUNT_OWNER";
 
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SpareType {
@@ -18,13 +19,16 @@ pub struct VaultAccount {
     pub name_length: u8,
     pub pub_key: Pubkey,
     pub token_pub_key: Pubkey,
+    pub owner_pub_key: Pubkey,
     pub spare_type: u8,
     pub automatic_days_period: u8,
+    pub earnings_enabled: bool,
     pub identifier: [u8; 22],
 }
 
 impl VaultAccount {
-    pub const SIZE: usize = 30 + 1 + 32 + 32 + 1 + 1 + 22;
+    pub const EXTRA_SPACE: usize = 128;
+    pub const SIZE: usize = 30 + 1 + 32 + 32 + 32 + 1 + 1 + 1 + 22 + VaultAccount::EXTRA_SPACE;
 }
 
 #[account(zero_copy)]
@@ -41,9 +45,10 @@ impl VaultManager {
 
 #[account]
 pub struct VaultOwner {
-    pub owner: Pubkey,
+    pub bump: u8,
 }
 
 impl VaultOwner {
-    pub const LEN: usize = 8 + 32;
+    pub const EXTRA_SPACE: usize = 64;
+    pub const LEN: usize = 1 + VaultOwner::EXTRA_SPACE;
 }

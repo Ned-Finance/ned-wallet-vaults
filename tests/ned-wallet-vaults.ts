@@ -23,9 +23,11 @@ describe("ned-wallet-vaults", () => {
 
   const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
   const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
+  const VAULTS_PDA_ACCOUNT_OWNER = Buffer.from("VAULTS_PDA_ACCOUNT_OWNER")
 
   // const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
   const currentMint = new PublicKey("So11111111111111111111111111111111111111112") // SOL
+  // const currentMint = null
   let mint = null
   let decimals = 9
   let mintAta = null
@@ -45,10 +47,15 @@ describe("ned-wallet-vaults", () => {
     program.programId
   );
 
+  const [vaultAccountOwner,] = PublicKey.findProgramAddressSync(
+    [VAULTS_PDA_ACCOUNT_OWNER, provider.publicKey.toBuffer(), identifierBuffer],
+    program.programId
+  );
+
 
   // Start Meteora
-  const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
   const vaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
+  const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
   const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT")
 
   const [tokenVault,] = PublicKey.findProgramAddressSync(
@@ -173,11 +180,12 @@ describe("ned-wallet-vaults", () => {
     try {
 
       const tx = await program.methods
-        .createVault(accountNameBuffer, identifierBuffer, { none: {} })
+        .createVault(accountNameBuffer, identifierBuffer, { none: {} }, true)
         .accounts({
           owner: provider.publicKey,
           dataAccount,
           vaultAccount,
+          vaultAccountOwner,
           mint,
           systemProgram: anchor.web3.SystemProgram.programId,
           tokenProgram: TOKEN_PROGRAM_ID,
@@ -243,13 +251,42 @@ describe("ned-wallet-vaults", () => {
 
 
       const firstAccountFetched = await getAccount(connection, savingsVault.pubKey)
-      console.log('amount-->', firstAccountFetched.amount)
 
       assert.isTrue(Number(firstAccountFetched.amount) == amount);
     } catch (error) {
       console.log('error', error)
     }
 
+  })
+
+  xit("withdraw from vault", async () => {
+    try {
+
+      console.log('mintAta.address', mintAta.address)
+
+      const firstAccountFetched = await getAccount(connection, savingsVault.pubKey)
+
+      const tx = await program.methods
+        .withdrawFromVault(identifierBuffer, new anchor.BN(firstAccountFetched.amount))
+        .accounts({
+          owner: provider.publicKey,
+          dataAccount,
+          mint,
+          vaultAccountOwner: savingsVault.ownerPubKey,
+          vaultAccount: savingsVault.pubKey,
+          userTokenAccount: mintAta.address,
+          tokenProgram: TOKEN_PROGRAM_ID
+        })
+        .signers([provider.wallet.payer])
+        .rpc();
+
+      console.log("Your withdraw liquidity tx =", tx);
+
+    } catch (_error: any) {
+      console.log(_error)
+      assert.fail("Unexpected error type, console.log _error variable")
+
+    }
   })
 
   it("deposit liquidity from savings", async () => {
@@ -259,28 +296,29 @@ describe("ned-wallet-vaults", () => {
         connection,
         provider.wallet.payer,
         vaultLpMint,
-        dataAccount,
+        savingsVault.ownerPubKey,
         true
       )
 
-      console.log('userToken', userLpToken.address)
+      const accounts = {
+        owner: provider.publicKey,
+        dataAccount,
+        vaultAccount: savingsVault.pubKey,
+        vaultAccountOwner: savingsVault.ownerPubKey,
+        mint,
+        vaultProgram,
+        vault,
+        tokenVault,
+        vaultLpMint,
+        user: savingsVault.ownerPubKey,
+        userToken: savingsVault.pubKey,
+        userLp: userLpToken.address,
+        tokenProgram: TOKEN_PROGRAM_ID
+      }
 
       const tx = await program.methods
-        .investOnSavings(identifierBuffer, new anchor.BN(0.2 * Math.pow(10, decimals)))
-        .accounts({
-          owner: provider.publicKey,
-          dataAccount,
-          vaultAccount: savingsVault.pubKey,
-          mint,
-          vaultProgram,
-          vault,
-          tokenVault,
-          vaultLpMint,
-          user: dataAccount,
-          userToken: savingsVault.pubKey,
-          userLp: userLpToken.address,
-          tokenProgram: TOKEN_PROGRAM_ID
-        })
+        .depositLiquidity(identifierBuffer, new anchor.BN(0.2 * Math.pow(10, decimals)))
+        .accounts(accounts)
         .signers([provider.wallet.payer])
         .rpc();
 
@@ -300,24 +338,25 @@ describe("ned-wallet-vaults", () => {
         connection,
         provider.wallet.payer,
         vaultLpMint,
-        dataAccount,
+        savingsVault.ownerPubKey,
         true
       )
 
-      console.log('userToken', userLpToken.address, userLpToken.amount)
+      // console.log('userToken', userLpToken.address, userLpToken.amount)
 
       const tx = await program.methods
-        .withdrawSavings(identifierBuffer, new anchor.BN(userLpToken.amount))
+        .withdrawLiquidity(identifierBuffer, new anchor.BN(userLpToken.amount))
         .accounts({
           owner: provider.publicKey,
           dataAccount,
           vaultAccount: savingsVault.pubKey,
+          vaultAccountOwner: savingsVault.ownerPubKey,
           mint,
           vaultProgram,
           vault,
           tokenVault,
           vaultLpMint,
-          user: dataAccount,
+          user: savingsVault.ownerPubKey,
           userToken: savingsVault.pubKey,
           userLp: userLpToken.address,
           tokenProgram: TOKEN_PROGRAM_ID
@@ -351,20 +390,24 @@ describe("ned-wallet-vaults", () => {
 
   })
 
-  xit("Update account vault", async () => {
+  it("Update account vault", async () => {
     try {
 
       accountName = "New account" + (Math.random() + 1).toString(36).substring(2)
       accountNameBuffer = Buffer.from(accountName)
 
+      const accounts = {
+        owner: provider.publicKey,
+        dataAccount: dataAccount,
+        mint: mint,
+        vaultAccountOwner: savingsVault.ownerPubKey,
+        vaultAccount: savingsVault.pubKey,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      }
+
       const tx = await program.methods
-        .updateVault(identifierBuffer, accountNameBuffer, { spare: {} })
-        .accounts({
-          owner: provider.publicKey,
-          dataAccount,
-          vaultAccount: savingsVault.pubKey,
-          mint,
-        })
+        .updateVault(identifierBuffer, accountNameBuffer, { spare: {} }, false)
+        .accounts(accounts)
         .signers([provider.wallet.payer])
         .rpc();
 
@@ -448,6 +491,7 @@ describe("ned-wallet-vaults", () => {
           .accounts({
             owner: provider.publicKey,
             dataAccount,
+            vaultAccountOwner: account.ownerPubKey,
             vaultAccount: account.pubKey,
             mint: account.tokenPubKey,
             userTokenAccount: mintAta.address

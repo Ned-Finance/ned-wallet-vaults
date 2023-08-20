@@ -1,4 +1,4 @@
-use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, SpareType, VaultManager};
+use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER, SpareType, VaultManager, VaultOwner};
 use crate::errors::vaults::VaultsAccountsError;
 use crate::utils::vaults::{name_is_empty, get_name_array};
 
@@ -29,12 +29,20 @@ pub struct CreateVault<'info> {
 
     #[account(
         init_if_needed,
+        seeds = [VAULTS_PDA_ACCOUNT_OWNER, owner.key.as_ref(), &identifier],
+        bump,
+        payer = owner,
+        space = VaultOwner::LEN + 8
+    )]
+    pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
+
+    #[account(
+        init_if_needed,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
         payer = owner,
-        // owner = vault_owner.key(),
         token::mint = mint, 
-        token::authority = data_account,
+        token::authority = vault_account_owner,
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
@@ -44,7 +52,7 @@ pub struct CreateVault<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spare_type: SpareType) -> Result<()> {
+pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spare_type: SpareType, earnings_enabled:bool) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&name) {
         return Err(error!(VaultsAccountsError::AccountNameEmpty));
@@ -59,6 +67,7 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
     
 
     let vault_account = &mut ctx.accounts.vault_account;
+    let vault_account_owner = &mut ctx.accounts.vault_account_owner;
     let mint = &mut ctx.accounts.mint;
     
     data_account.owner = ctx.accounts.owner.key();
@@ -73,11 +82,13 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
             let account_to_replace = &mut user_accounts[index];
 
             account_to_replace.pub_key = vault_account.key();
+            account_to_replace.owner_pub_key = vault_account_owner.key();
             account_to_replace.token_pub_key = mint.key();
             
             account_to_replace.name = get_name_array(name.clone());
             account_to_replace.name_length = (&name).len() as u8;
             account_to_replace.spare_type = spare_type as u8;
+            account_to_replace.earnings_enabled = earnings_enabled;
             account_to_replace.identifier = identifier;
 
             return Ok(());

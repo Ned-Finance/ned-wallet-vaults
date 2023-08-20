@@ -1,5 +1,5 @@
 use crate::errors::vaults::VaultsAccountsError;
-use crate::state::vaults::{VaultManager, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT};
+use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, TokenAccount, Mint, Token, Transfer};
 
@@ -21,10 +21,17 @@ pub struct WithdrawFromVault<'info> {
 
     #[account(
         mut,
+        seeds = [VAULTS_PDA_ACCOUNT_OWNER, owner.key.as_ref(), &identifier],
+        bump
+    )]
+    pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
+
+    #[account(
+        mut,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
         token::mint = mint, 
-        token::authority = data_account,
+        token::authority = vault_account_owner,
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
@@ -44,7 +51,7 @@ impl <'info> WithdrawFromVault<'info> {
             Transfer {
                 from: self.vault_account.to_account_info().clone(),
                 to: self.user_token_account.to_account_info().clone(),
-                authority: self.data_account.to_account_info().clone(),
+                authority: self.vault_account_owner.to_account_info().clone(),
             }
         )
     }
@@ -58,18 +65,36 @@ pub fn handler(
 
     let data_account = &mut ctx.accounts.data_account.load()?;
     if data_account.owner.key() == ctx.accounts.owner.key() {
+        let accounts = &data_account.accounts;
 
-        let (_data_account, bump) =
-            Pubkey::find_program_address(&[VAULTS_PDA_DATA, ctx.accounts.owner.key.as_ref()], ctx.program_id);
-        let seeds = &[&VAULTS_PDA_DATA, ctx.accounts.owner.key.as_ref(), &[bump][..]];
+        let account_found = accounts.iter().find(
+            |x| x.pub_key.key() == ctx.accounts.vault_account.key());
 
-        token::transfer(
-            ctx.accounts
-                .withdraw()
-                .with_signer(&[&seeds[..]]),
-                amount,
-        )?;
+        if let Some(account) = account_found {
+            let (_vault_account_owner, bump) =
+                Pubkey::find_program_address(
+                    &[
+                        VAULTS_PDA_ACCOUNT_OWNER, 
+                        ctx.accounts.owner.key.as_ref(),
+                        &account.identifier
+                    ], 
+                    ctx.program_id,
+                );
 
+            let seeds = &[
+                &VAULTS_PDA_ACCOUNT_OWNER, 
+                ctx.accounts.owner.key.as_ref(), 
+                &account.identifier,
+                &[bump]
+            ];
+
+            token::transfer(
+                ctx.accounts
+                    .withdraw()
+                    .with_signer(&[&seeds[..]]),
+                    amount,
+            )?;
+        }
         Ok(())
     } else {
         return Err(error!(VaultsAccountsError::ActionNotAllowed));

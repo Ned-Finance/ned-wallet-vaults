@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 use crate::instructions::*;
 use crate::state::vaults::SpareType;
 
-declare_id!("NEDrjAVUqMdZjpkJUPXeJe7SmfREW8pzLAFyhDUQhaJ");
+declare_id!("NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA");
 
 #[program]
 pub mod ned_wallet_vaults {
@@ -20,8 +20,9 @@ pub mod ned_wallet_vaults {
         name: Vec<u8>,
         identifier: [u8; 22],
         account_type: SpareType,
+        earnings_enabled: bool,
     ) -> Result<()> {
-        create_vault::handler(ctx, name, identifier, account_type)
+        create_vault::handler(ctx, name, identifier, account_type, earnings_enabled)
     }
 
     pub fn update_vault(
@@ -29,8 +30,9 @@ pub mod ned_wallet_vaults {
         identifier: [u8; 22],
         new_name: Vec<u8>,
         account_type: SpareType,
+        earnings_enabled: bool,
     ) -> Result<()> {
-        update_vault::handler(ctx, identifier, new_name, account_type)
+        update_vault::handler(ctx, identifier, new_name, account_type, earnings_enabled)
     }
 
     pub fn delete_vault(
@@ -48,19 +50,19 @@ pub mod ned_wallet_vaults {
         withdraw_from_vault::handler(ctx, identifier, amount)
     }
 
-    pub fn invest_on_savings(
-        ctx: Context<InvestOnSavings>,
+    pub fn deposit_liquidity(
+        ctx: Context<DepositLiquidity>,
         indetifier: [u8; 22],
         amount: u64,
     ) -> Result<()> {
-        invest_on_savings::handler(ctx, indetifier, amount)
+        deposit_liquidity::handler(ctx, indetifier, amount)
     }
 
-    pub fn withdraw_savings(
-        ctx: Context<WithdrawSavings>,
+    pub fn withdraw_liquidity(
+        ctx: Context<WithdrawLiquidity>,
         indetifier: [u8; 22],
         amount: u64,
     ) -> Result<()> {
-        withdraw_savings::handler(ctx, indetifier, amount)
+        withdraw_liquidity::handler(ctx, indetifier, amount)
     }
 }

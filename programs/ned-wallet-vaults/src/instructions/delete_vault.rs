@@ -1,5 +1,5 @@
 use crate::errors::vaults::VaultsAccountsError;
-use crate::state::vaults::{VaultManager, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT};
+use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, TokenAccount, Mint, Token, Transfer};
 use anchor_lang::solana_program::pubkey;
@@ -21,10 +21,17 @@ pub struct DeleteSavingsAccountVault<'info> {
 
     #[account(
         mut,
+        seeds = [VAULTS_PDA_ACCOUNT_OWNER, owner.key.as_ref(), &identifier],
+        bump
+    )]
+    pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
+
+    #[account(
+        mut,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
         token::mint = mint, 
-        token::authority = data_account,
+        token::authority = vault_account_owner,
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
@@ -39,11 +46,11 @@ pub struct DeleteSavingsAccountVault<'info> {
 }
 
 impl <'info> DeleteSavingsAccountVault<'info> {
-    fn transfer_usdc(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+    fn transfer_token(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         let cpi_accounts = Transfer {
             from: self.vault_account.to_account_info().clone(),
             to: self.user_token_account.to_account_info().clone(),
-            authority: self.data_account.to_account_info().clone(),
+            authority: self.vault_account_owner.to_account_info().clone(),
         };
         CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
     }
@@ -65,6 +72,8 @@ pub fn handler(
         
         if let Some(account) = account {
 
+            let identifier = account.identifier.clone();
+
             account.name = [0;30];
             account.spare_type = 0;
             account.pub_key = pubkey!("11111111111111111111111111111111");
@@ -73,22 +82,17 @@ pub fn handler(
             
             drop(data_account);
 
-            let close_instruction = anchor_spl::token::CloseAccount {
-                account: vault_account.to_account_info().clone(),
-                destination: ctx.accounts.user_token_account.to_account_info().clone(),
-                authority: ctx.accounts.data_account.to_account_info(),
-            };
-
-
             let (_account, _bump) =
                 Pubkey::find_program_address(&[
-                    VAULTS_PDA_DATA,  
+                    VAULTS_PDA_ACCOUNT_OWNER,  
                     ctx.accounts.owner.key.as_ref(), 
+                    &identifier,
                 ], ctx.program_id);
 
             let seeds = &[
-                VAULTS_PDA_DATA, 
+                VAULTS_PDA_ACCOUNT_OWNER, 
                 ctx.accounts.owner.key.as_ref(),
+                &identifier,
                 &[_bump]
             ];
 
@@ -98,11 +102,17 @@ pub fn handler(
 
             token::transfer(
                 ctx.accounts
-                    .transfer_usdc()
+                    .transfer_token()
                     .with_signer(signer),
                     vault_account.amount,
             )?;
     
+            //Close NED vault
+            let close_instruction = anchor_spl::token::CloseAccount {
+                account: vault_account.to_account_info().clone(),
+                destination: ctx.accounts.user_token_account.to_account_info().clone(),
+                authority: ctx.accounts.vault_account_owner.to_account_info(),
+            };
 
             let cpi_ctx = CpiContext::new_with_signer(
                 cpi_program,
@@ -110,6 +120,9 @@ pub fn handler(
                 signer
             );
             anchor_spl::token::close_account(cpi_ctx)?;
+    
+            //Close NED vault owner
+            ctx.accounts.vault_account_owner.close(ctx.accounts.owner.to_account_info())?;
 
             Ok(())
         } else {

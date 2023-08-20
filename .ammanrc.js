@@ -39,6 +39,11 @@ module.exports = {
                 cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
             },
             {
+                label: "Wrapped Sol",
+                accountId: "So11111111111111111111111111111111111111112",
+                cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
+            },
+            {
                 label: "Account",
                 accountId: "AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs",
                 cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
