@@ -5,13 +5,15 @@ skip-lint = false
 ned_wallet_vaults = "NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA"
 [programs.devnet]
 ned_wallet_vaults = "NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA"
+[programs.mainnet]
+ned_wallet_vaults = "NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
-wallet = "/Users/marco/.config/solana/id.json"
+cluster = "mainnet"
+wallet = "/Users/marco/.config/solana/NEDzxUBCT6CRucDzNrVqCsQXsV27cwD2KF1noMpmkH6.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
