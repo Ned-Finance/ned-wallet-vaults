@@ -1,4 +1,5 @@
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
+use crate::state::ledger::{LedgerStore, LEDGER_PDA_DATA};
 use crate::errors::vaults::VaultsAccountsError;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Token, Mint};
@@ -11,7 +12,7 @@ use crate::utils::vaults::deposit_liquidity;
 
 #[derive(Accounts)]
 #[instruction(identifier: [u8;22])]
-pub struct DepositLiquidity<'info> {
+pub struct DepositLiquidityWithDiffBalance<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
@@ -40,6 +41,12 @@ pub struct DepositLiquidity<'info> {
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
+    #[account(
+        mut,
+        token::mint = mint, 
+        token::authority = owner,
+    )]
+    pub user_token_account: Account<'info, TokenAccount>,
 
     /// CHECK:
     pub vault_program: Program<'info, MercurialVault>,
@@ -63,13 +70,23 @@ pub struct DepositLiquidity<'info> {
     pub user_lp: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub token_program: Program<'info, Token>,
+
+    #[account(
+        mut,
+        seeds = [LEDGER_PDA_DATA, owner.key.as_ref()],
+        bump,
+    )]
+    pub ledger_data: Account<'info, LedgerStore>, 
 }
 
 pub fn handler(
-    ctx: Context<DepositLiquidity>,
-    _identifier: [u8;22],
-    amount:u64,
+    ctx: Context<DepositLiquidityWithDiffBalance>,
+    _identifier: [u8;22]
 ) -> Result<()> {
+
+    let balance_transfered_to_vault = ctx.accounts.ledger_data.amount;
+
+    msg!("Balance transfered to vault to be transfered to Meteora: {:?}", balance_transfered_to_vault);
 
     let data_account = &mut ctx.accounts.data_account.load()?;
 
@@ -87,6 +104,6 @@ pub fn handler(
         &ctx.program_id,
         &ctx.accounts.vault_program,
         _identifier,
-        amount
+        balance_transfered_to_vault
     );
 }

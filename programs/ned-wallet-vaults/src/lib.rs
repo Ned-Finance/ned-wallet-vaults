@@ -52,17 +52,35 @@ pub mod ned_wallet_vaults {
 
     pub fn deposit_liquidity(
         ctx: Context<DepositLiquidity>,
-        indetifier: [u8; 22],
+        identifier: [u8; 22],
         amount: u64,
     ) -> Result<()> {
-        deposit_liquidity::handler(ctx, indetifier, amount)
+        deposit_liquidity::handler(ctx, identifier, amount)
     }
 
     pub fn withdraw_liquidity(
         ctx: Context<WithdrawLiquidity>,
-        indetifier: [u8; 22],
+        identifier: [u8; 22],
         amount: u64,
     ) -> Result<()> {
-        withdraw_liquidity::handler(ctx, indetifier, amount)
+        withdraw_liquidity::handler(ctx, identifier, amount)
+    }
+
+    pub fn save_account_balance(ctx: Context<SaveAccountBalanceOnLedger>) -> Result<()> {
+        save_account_balance::handler(ctx)
+    }
+
+    pub fn deposit_to_vault_with_diff_balance(
+        ctx: Context<DepositToVaultWithDiffBalance>,
+        identifier: [u8; 22],
+    ) -> Result<()> {
+        deposit_to_vault_with_diff_balance::handler(ctx, identifier)
+    }
+
+    pub fn deposit_liquidity_with_diff_balance(
+        ctx: Context<DepositLiquidityWithDiffBalance>,
+        identifier: [u8; 22],
+    ) -> Result<()> {
+        deposit_liquidity_with_diff_balance::handler(ctx, identifier)
     }
 }

@@ -12,8 +12,8 @@ ned_wallet_vaults = "NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "mainnet"
-wallet = "/Users/marco/.config/solana/NEDzxUBCT6CRucDzNrVqCsQXsV27cwD2KF1noMpmkH6.json"
+cluster = "https://devnet.helius-rpc.com/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261"
+wallet = "/Users/marco/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

@@ -18,4 +18,8 @@ pub enum VaultsAccountsError {
     DepositSavingsError,
     #[msg("Error when withdrawal from protocol")]
     WithdrawalSavingsError,
+    #[msg("Vault not found")]
+    VaultNotFound,
+    #[msg("Amount in account is over slippage")]
+    AccountBalanceOverSlippage,
 }

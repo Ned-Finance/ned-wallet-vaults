@@ -1,525 +1,677 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorError, Program } from "@coral-xyz/anchor";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, createMint, getAccount, getOrCreateAssociatedTokenAccount, mintTo, transfer } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import {
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    Account,
+    TOKEN_PROGRAM_ID,
+    createMint,
+    createMintToInstruction,
+    createTransferCheckedInstruction,
+    getAccount,
+    getOrCreateAssociatedTokenAccount,
+    mintTo,
+    transfer,
+} from "@solana/spl-token";
+import {
+    PublicKey,
+    SYSVAR_INSTRUCTIONS_PUBKEY,
+    TransactionMessage,
+    VersionedTransaction,
+} from "@solana/web3.js";
 import { assert } from "chai";
-import * as shortuuid from 'short-uuid';
+import * as shortuuid from "short-uuid";
 import { NedWalletVaults } from "../target/types/ned_wallet_vaults";
 
-
 describe("ned-wallet-vaults", () => {
-  // Configure the client to use the local cluster.
-  anchor.setProvider(anchor.AnchorProvider.env());
+    // Configure the client to use the local cluster.
+    anchor.setProvider(anchor.AnchorProvider.env());
 
-  console.log('NedWalletVaults', anchor.workspace)
+    console.log("NedWalletVaults", anchor.workspace);
 
-  const program = anchor.workspace.NedWalletVaults as Program<NedWalletVaults>;
-  // const savingsProgram = anchor.workspace.NedWalletVaultsSavings as Program<NedWalletVaultsSavings>;
-  const connection = anchor.getProvider().connection
-  const provider = anchor.workspace.NedWalletVaults.provider
+    const program = anchor.workspace.NedWalletVaults as Program<NedWalletVaults>;
+    // const savingsProgram = anchor.workspace.NedWalletVaultsSavings as Program<NedWalletVaultsSavings>;
+    const provider = anchor.workspace.NedWalletVaults.provider;
+    const connection = provider.connection;
 
-  let accountName = (Math.random() + 1).toString(36).substring(2); //'Account 1'
-  let accountNameBuffer = Buffer.from(accountName)
+    let accountName = (Math.random() + 1).toString(36).substring(2); //'Account 1'
+    let accountNameBuffer = Buffer.from(accountName);
 
-  const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA")
-  const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT")
-  const VAULTS_PDA_ACCOUNT_OWNER = Buffer.from("VAULTS_PDA_ACCOUNT_OWNER")
+    const VAULTS_PDA_DATA = Buffer.from("VAULTS_PDA_DATA");
+    const VAULTS_PDA_ACCOUNT = Buffer.from("VAULTS_PDA_ACCOUNT");
+    const VAULTS_PDA_ACCOUNT_OWNER = Buffer.from("VAULTS_PDA_ACCOUNT_OWNER");
+    const LEDGER_PDA_DATA = Buffer.from("LEDGER_PDA_DATA");
 
-  // const currentMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
-  const currentMint = new PublicKey("So11111111111111111111111111111111111111112") // SOL
-  // const currentMint = null
-  let mint = null
-  let decimals = 9
-  let mintAta = null
+    // const tokenToMint = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") // USDC
+    const tokenToMint = new PublicKey("So11111111111111111111111111111111111111112"); // SOL
+    // const tokenToMint = null;
+    const initialValue = 100;
+    let mint = null;
+    let decimals = 9;
+    let mintAta: Account | null = null;
 
-  const identifier = shortuuid.generate()
-  const identifierBuffer = Buffer.from(identifier)
+    const identifier = shortuuid.generate();
+    const identifierBuffer = Buffer.from(identifier);
 
-  let savingsVault = null
+    let savingsVault = null;
 
-  const [dataAccount,] = PublicKey.findProgramAddressSync(
-    [VAULTS_PDA_DATA, provider.publicKey.toBuffer()],
-    program.programId
-  );
+    const [dataAccount] = PublicKey.findProgramAddressSync(
+        [VAULTS_PDA_DATA, provider.publicKey.toBuffer()],
+        program.programId
+    );
 
-  const [vaultAccount,] = PublicKey.findProgramAddressSync(
-    [VAULTS_PDA_ACCOUNT, provider.publicKey.toBuffer(), identifierBuffer],
-    program.programId
-  );
+    const [vaultAccount] = PublicKey.findProgramAddressSync(
+        [VAULTS_PDA_ACCOUNT, provider.publicKey.toBuffer(), identifierBuffer],
+        program.programId
+    );
 
-  const [vaultAccountOwner,] = PublicKey.findProgramAddressSync(
-    [VAULTS_PDA_ACCOUNT_OWNER, provider.publicKey.toBuffer(), identifierBuffer],
-    program.programId
-  );
+    const [vaultAccountOwner] = PublicKey.findProgramAddressSync(
+        [VAULTS_PDA_ACCOUNT_OWNER, provider.publicKey.toBuffer(), identifierBuffer],
+        program.programId
+    );
 
+    // Start Meteora
+    const meteoraVaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi");
+    const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM");
+    const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT");
 
-  // Start Meteora
-  const vaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
-  const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM")
-  const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT")
+    const [tokenVault] = PublicKey.findProgramAddressSync(
+        [Buffer.from("token_vault"), vault.toBuffer()],
+        meteoraVaultProgram
+    );
+    // End Meteora
 
-  const [tokenVault,] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_vault"), vault.toBuffer()],
-    vaultProgram
-  );
-  // End Meteora
+    const [ledgerData] = PublicKey.findProgramAddressSync(
+        [LEDGER_PDA_DATA, provider.publicKey.toBuffer()],
+        program.programId
+    );
 
-  before(async () => {
+    before(async () => {
+        mint = !tokenToMint
+            ? await createMint(
+                  connection,
+                  provider.wallet.payer,
+                  provider.publicKey,
+                  provider.publicKey,
+                  decimals
+              )
+            : tokenToMint;
 
-    mint = !currentMint ? await createMint(
-      connection,
-      provider.wallet.payer,
-      provider.publicKey,
-      provider.publicKey,
-      decimals
-    ) : currentMint
-
-    mintAta = await getOrCreateAssociatedTokenAccount(
-      connection,
-      provider.wallet.payer,
-      mint,
-      provider.publicKey
-    )
-
-    // console.log(
-    //   provider.wallet.payer,
-    //   mintAta,
-    //   provider.publicKey,
-    //   SystemProgram.programId)
-
-    // const tx = await closeAccount(
-    //   connection,
-    //   provider.wallet.payer,
-    //   mintAta.address,
-    //   provider.publicKey,
-    //   provider.publicKey
-    // )
-    // console.log('tx', tx)
-
-
-    if (!currentMint) {
-      mintTo(
-        connection,
-        provider.wallet.payer,
-        mint,
-        mintAta.address,
-        provider.publicKey,
-        100 * Math.pow(10, decimals)
-      )
-    } else {
-
-      // console.log('mintAta.address', mintAta.address)
-      // const fundTransfer = await transfer(
-      //   connection,
-      //   provider.wallet.payer,
-      //   provider.publicKey,
-      //   mintAta.address,
-      //   provider.wallet.payer,
-      //   2.5 * Math.pow(10, decimals)
-      // )
-      // console.log("fundTransfer", provider.publicKey)
-      // const tx = await createWrappedNativeAccount(
-      //   connection,
-      //   provider.wallet.payer,
-      //   SystemProgram.programId,
-      //   2.5 * Math.pow(10, 9)
-      // )
-      // console.log('tx', tx)
-
-
-      // const transaction = new Transaction().add(
-      //   SystemProgram.transfer({
-      //     fromPubkey: provider.publicKey,
-      //     toPubkey: mintAta.address,
-      //     lamports: 2.5 * Math.pow(10, 9),
-      //   }),
-      // );
-
-      // const tx = await sendAndConfirmTransaction(connection, transaction, [provider.wallet.payer]);
-      // console.log('tx', tx)
-
-    }
-
-    // const solATA = getAssociatedTokenAddressSync(
-    //   mint,
-    //   provider.publicKey,
-    //   false,
-    //   TOKEN_PROGRAM_ID,
-    //   ASSOCIATED_TOKEN_PROGRAM_ID
-    // );
-
-    // const solATAAccount = await getAccount(
-    //   connection,
-    //   solATA
-    // )
-
-    // console.log('solATAAccount', solATAAccount)
-
-    // if (!solATAAccount.isInitialized) {
-    //   createWrappedNativeAccount(
-    //     connection,
-    //     provider.wallet.payer,
-    //     provider.publicKey,
-    //     1 * Math.pow(10, 9)
-    //   )
-    // } else {
-
-    // }
-
-
-
-  })
-
-  // console.log("dataAccount", dataAccount.toBase58())
-  // console.log("vaultAccount", vaultAccount.toBase58())
-
-
-
-  it("Create a new account", async () => {
-
-    try {
-
-      const tx = await program.methods
-        .createVault(accountNameBuffer, identifierBuffer, { none: {} }, true)
-        .accounts({
-          owner: provider.publicKey,
-          dataAccount,
-          vaultAccount,
-          vaultAccountOwner,
-          mint,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-          rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-        })
-        .signers([provider.wallet.payer])
-        .rpc();
-
-      console.log("Your transaction signature", tx);
-
-      const account = await program.account.vaultManager.fetch(
-        dataAccount
-      );
-
-      savingsVault = account.accounts.find(x => {
-        const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
-        return nameBufferSlice.toString() == accountName
-      })
-      console.log('create savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
-
-      assert.isTrue(savingsVault != undefined)
-      assert.strictEqual(savingsVault.nameLength, accountName.length);
-      assert.isTrue(Buffer.from(savingsVault.name.slice(0, savingsVault.nameLength)).toString() == accountName)
-
-    } catch (_error: any) {
-      console.log('Create account error =>', _error)
-      if (_error instanceof AnchorError) {
-
-        const alreadyInitializedMsg = 'This account was already initialized'
-
-        assert.isTrue(_error instanceof AnchorError);
-        assert.strictEqual(_error.error.errorMessage, alreadyInitializedMsg);
-        assert.strictEqual(_error.error.errorCode.code, 'AlreadyInitialized');
-        assert.strictEqual(_error.error.errorCode.number, 6000);
-        assert.strictEqual(
-          _error.program.toString(),
-          program.programId.toString()
+        mintAta = await getOrCreateAssociatedTokenAccount(
+            connection,
+            provider.wallet.payer,
+            mint,
+            provider.publicKey
         );
 
-        assert.fail("Failed to create a new savings account, error received was correct but not expected in the test. Reset test validator and try again.")
-      } else {
-        assert.fail("Unexpected error type, console.log _error variable")
-      }
-    }
+        // console.log(
+        //   provider.wallet.payer,
+        //   mintAta,
+        //   provider.publicKey,
+        //   SystemProgram.programId)
 
-  });
+        // const tx = await closeAccount(
+        //   connection,
+        //   provider.wallet.payer,
+        //   mintAta.address,
+        //   provider.publicKey,
+        //   provider.publicKey
+        // )
+        // console.log('tx', tx)
 
-  it("deposit money to fund", async () => {
+        if (!tokenToMint) {
+            mintTo(
+                connection,
+                provider.wallet.payer,
+                mint,
+                mintAta.address,
+                provider.publicKey,
+                initialValue * Math.pow(10, decimals)
+            );
+        } else {
+            // console.log('mintAta.address', mintAta.address)
+            // const fundTransfer = await transfer(
+            //   connection,
+            //   provider.wallet.payer,
+            //   provider.publicKey,
+            //   mintAta.address,
+            //   provider.wallet.payer,
+            //   2.5 * Math.pow(10, decimals)
+            // )
+            // console.log("fundTransfer", provider.publicKey)
+            // const tx = await createWrappedNativeAccount(
+            //   connection,
+            //   provider.wallet.payer,
+            //   SystemProgram.programId,
+            //   2.5 * Math.pow(10, 9)
+            // )
+            // console.log('tx', tx)
+            // const transaction = new Transaction().add(
+            //   SystemProgram.transfer({
+            //     fromPubkey: provider.publicKey,
+            //     toPubkey: mintAta.address,
+            //     lamports: 2.5 * Math.pow(10, 9),
+            //   }),
+            // );
+            // const tx = await sendAndConfirmTransaction(connection, transaction, [provider.wallet.payer]);
+            // console.log('tx', tx)
+        }
 
-    try {
+        // const solATA = getAssociatedTokenAddressSync(
+        //   mint,
+        //   provider.publicKey,
+        //   false,
+        //   TOKEN_PROGRAM_ID,
+        //   ASSOCIATED_TOKEN_PROGRAM_ID
+        // );
 
-      const amount = 0.2 * Math.pow(10, decimals)
+        // const solATAAccount = await getAccount(
+        //   connection,
+        //   solATA
+        // )
 
-      const transferTx = await transfer(
-        connection,
-        provider.wallet.payer,
-        mintAta.address,
-        savingsVault.pubKey,
-        provider.publicKey,
-        amount
-      )
+        // console.log('solATAAccount', solATAAccount)
 
+        // if (!solATAAccount.isInitialized) {
+        //   createWrappedNativeAccount(
+        //     connection,
+        //     provider.wallet.payer,
+        //     provider.publicKey,
+        //     1 * Math.pow(10, 9)
+        //   )
+        // } else {
 
-      const firstAccountFetched = await getAccount(connection, savingsVault.pubKey)
+        // }
+    });
 
-      assert.isTrue(Number(firstAccountFetched.amount) == amount);
-    } catch (error) {
-      console.log('error', error)
-    }
+    // console.log("dataAccount", dataAccount.toBase58())
+    // console.log("vaultAccount", vaultAccount.toBase58())
 
-  })
+    it("Create a vault", async () => {
+        try {
+            const tx = await program.methods
+                .createVault(accountNameBuffer, identifierBuffer, { none: {} }, true)
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    vaultAccount,
+                    vaultAccountOwner,
+                    mint,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+                })
+                .signers([provider.wallet.payer])
+                .rpc();
 
-  xit("withdraw from vault", async () => {
-    try {
+            console.log("Your transaction signature", tx);
 
-      console.log('mintAta.address', mintAta.address)
+            const account = await program.account.vaultManager.fetch(dataAccount);
 
-      const firstAccountFetched = await getAccount(connection, savingsVault.pubKey)
+            savingsVault = account.accounts.find((x) => {
+                const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length));
+                return nameBufferSlice.toString() == accountName;
+            });
+            console.log("create savingsVault.pubKey ==> ", savingsVault.pubKey.toBase58());
 
-      const tx = await program.methods
-        .withdrawFromVault(identifierBuffer, new anchor.BN(firstAccountFetched.amount))
-        .accounts({
-          owner: provider.publicKey,
-          dataAccount,
-          mint,
-          vaultAccountOwner: savingsVault.ownerPubKey,
-          vaultAccount: savingsVault.pubKey,
-          userTokenAccount: mintAta.address,
-          tokenProgram: TOKEN_PROGRAM_ID
-        })
-        .signers([provider.wallet.payer])
-        .rpc();
+            assert.isTrue(savingsVault != undefined);
+            assert.strictEqual(savingsVault.nameLength, accountName.length);
+            assert.isTrue(
+                Buffer.from(savingsVault.name.slice(0, savingsVault.nameLength)).toString() ==
+                    accountName
+            );
+        } catch (_error: any) {
+            console.log("Create account error =>", _error);
+            if (_error instanceof AnchorError) {
+                const alreadyInitializedMsg = "This account was already initialized";
 
-      console.log("Your withdraw liquidity tx =", tx);
+                assert.isTrue(_error instanceof AnchorError);
+                assert.strictEqual(_error.error.errorMessage, alreadyInitializedMsg);
+                assert.strictEqual(_error.error.errorCode.code, "AlreadyInitialized");
+                assert.strictEqual(_error.error.errorCode.number, 6000);
+                assert.strictEqual(_error.program.toString(), program.programId.toString());
 
-    } catch (_error: any) {
-      console.log(_error)
-      assert.fail("Unexpected error type, console.log _error variable")
+                assert.fail(
+                    "Failed to create a new savings account, error received was correct but not expected in the test. Reset test validator and try again."
+                );
+            } else {
+                assert.fail("Unexpected error type, console.log _error variable");
+            }
+        }
+    });
 
-    }
-  })
+    it("deposit money to vault", async () => {
+        try {
+            const amount = 0.2 * Math.pow(10, decimals);
 
-  it("deposit liquidity from savings", async () => {
-    try {
+            const transferTx = await transfer(
+                connection,
+                provider.wallet.payer,
+                mintAta.address,
+                savingsVault.pubKey,
+                provider.publicKey,
+                amount
+            );
 
-      const userLpToken = await getOrCreateAssociatedTokenAccount(
-        connection,
-        provider.wallet.payer,
-        vaultLpMint,
-        savingsVault.ownerPubKey,
-        true
-      )
+            const firstAccountFetched = await getAccount(connection, savingsVault.pubKey);
 
-      const accounts = {
-        owner: provider.publicKey,
-        dataAccount,
-        vaultAccount: savingsVault.pubKey,
-        vaultAccountOwner: savingsVault.ownerPubKey,
-        mint,
-        vaultProgram,
-        vault,
-        tokenVault,
-        vaultLpMint,
-        user: savingsVault.ownerPubKey,
-        userToken: savingsVault.pubKey,
-        userLp: userLpToken.address,
-        tokenProgram: TOKEN_PROGRAM_ID
-      }
+            assert.isTrue(Number(firstAccountFetched.amount) == amount);
+        } catch (error) {
+            console.log("error", error);
+        }
+    });
 
-      const tx = await program.methods
-        .depositLiquidity(identifierBuffer, new anchor.BN(0.2 * Math.pow(10, decimals)))
-        .accounts(accounts)
-        .signers([provider.wallet.payer])
-        .rpc();
+    xit("deposit to vault from instruction", async () => {
+        // pub owner: Signer<'info>,
+        // pub data_account: AccountLoader<'info, VaultManager>,
+        // pub mint: Account<'info, Mint>,
+        // pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
+        // pub vault_account: Account<'info, TokenAccount>,
+        // pub user_token_account: Account<'info, TokenAccount>,
+        // pub token_program: Program<'info, Token>,
+        // pub instructions: UncheckedAccount<'info>,
 
-      console.log("Your deposit liquidity tx =", tx);
+        const account = await getAccount(provider.connection, mintAta.address);
 
-    } catch (_error: any) {
-      console.log(_error)
-      assert.fail("Unexpected error type, console.log _error variable")
+        const initialBalance = new anchor.BN(Number(account.amount));
+        const slippage = new anchor.BN(50);
+        const newTokensAmount = 10 * Math.pow(10, decimals);
+        const expectedAmount = new anchor.BN(newTokensAmount).sub(
+            new anchor.BN(0.3 * Math.pow(10, decimals))
+        );
 
-    }
-  })
+        console.log("expectedAmount", expectedAmount.toNumber());
 
-  it("withdraw liquidity to savings", async () => {
-    try {
+        console.info("Initial balance", initialBalance);
+        console.info("New tokens to mint", newTokensAmount);
+        console.info("Expected amount to receive", expectedAmount);
+        console.info("Slippage", slippage);
 
-      const userLpToken = await getOrCreateAssociatedTokenAccount(
-        connection,
-        provider.wallet.payer,
-        vaultLpMint,
-        savingsVault.ownerPubKey,
-        true
-      )
+        const ixSaveBalance = await program.methods
+            .saveAccountBalance()
+            .accounts({
+                owner: provider.publicKey,
+                mint,
+                userTokenAccount: mintAta.address,
+                ledgerData,
+                systemProgram: anchor.web3.SystemProgram.programId,
+                rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+            })
+            .signers([provider.wallet.payer])
+            .instruction();
 
-      // console.log('userToken', userLpToken.address, userLpToken.amount)
+        const mintToAccountIx = createMintToInstruction(
+            mint,
+            mintAta.address,
+            provider.publicKey,
+            newTokensAmount
+        );
 
-      const tx = await program.methods
-        .withdrawLiquidity(identifierBuffer, new anchor.BN(userLpToken.amount))
-        .accounts({
-          owner: provider.publicKey,
-          dataAccount,
-          vaultAccount: savingsVault.pubKey,
-          vaultAccountOwner: savingsVault.ownerPubKey,
-          mint,
-          vaultProgram,
-          vault,
-          tokenVault,
-          vaultLpMint,
-          user: savingsVault.ownerPubKey,
-          userToken: savingsVault.pubKey,
-          userLp: userLpToken.address,
-          tokenProgram: TOKEN_PROGRAM_ID
-        })
-        .signers([provider.wallet.payer])
-        .rpc();
+        const ixDeposit = await program.methods
+            .depositToVaultWithDiffBalance(identifierBuffer)
+            .accounts({
+                owner: provider.publicKey,
+                dataAccount,
+                mint,
+                vaultAccountOwner: savingsVault.ownerPubKey,
+                vaultAccount: savingsVault.pubKey,
+                userTokenAccount: mintAta.address,
+                ledgerData,
+                tokenProgram: TOKEN_PROGRAM_ID,
+                instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+            })
+            .signers([provider.wallet.payer])
+            .instruction();
 
-      console.log("Your withdraw liquidity tx =", tx);
+        const instructions = [ixSaveBalance, mintToAccountIx, ixDeposit];
 
-    } catch (_error: any) {
-      console.log(_error)
-      assert.fail("Unexpected error type, console.log _error variable")
+        const blockhash = (await connection.getLatestBlockhash()).blockhash;
 
-    }
-  })
+        const messageV0 = new TransactionMessage({
+            payerKey: provider.publicKey,
+            recentBlockhash: blockhash,
+            instructions,
+        }).compileToV0Message();
 
-  xit("Get number of available accounts", async () => {
+        const transaction = new VersionedTransaction(messageV0);
 
+        transaction.sign([provider.wallet.payer]);
 
-    const account = await program.account.vaultManager.fetch(
-      dataAccount
-    );
+        // try {
+        // await provider.simulate(transaction, [provider.payer]);
 
-    const availableSpots = account.accounts
-      .map(x => x.nameLength == 0)
-      .filter(x => x == true)
-      .length
+        // const txID = await provider.sendAndConfirm(transaction);
+        const txID = await provider.connection.sendTransaction(transaction);
+        console.log({ txID });
+        // } catch (e) {
+        //     console.log({ simulationResponse: e.simulationResponse });
+        // }
+    });
 
-    assert.isTrue(availableSpots >= 0);
-    assert.isTrue(availableSpots <= 20); // Only 20 accounts max are allowed, check program
+    xit("withdraw from vault", async () => {
+        try {
+            console.log("mintAta.address", mintAta.address);
 
-  })
+            const firstAccountFetched = await getAccount(connection, savingsVault.pubKey);
 
-  it("Update account vault", async () => {
-    try {
+            const tx = await program.methods
+                .withdrawFromVault(identifierBuffer, new anchor.BN(firstAccountFetched.amount))
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    mint,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    vaultAccount: savingsVault.pubKey,
+                    userTokenAccount: mintAta.address,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .signers([provider.wallet.payer])
+                .rpc();
 
-      accountName = "New account" + (Math.random() + 1).toString(36).substring(2)
-      accountNameBuffer = Buffer.from(accountName)
+            console.log("Your withdraw liquidity tx =", tx);
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
 
-      const accounts = {
-        owner: provider.publicKey,
-        dataAccount: dataAccount,
-        mint: mint,
-        vaultAccountOwner: savingsVault.ownerPubKey,
-        vaultAccount: savingsVault.pubKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      }
+    xit("deposit liquidity from savings", async () => {
+        try {
+            const userLpToken = await getOrCreateAssociatedTokenAccount(
+                connection,
+                provider.wallet.payer,
+                vaultLpMint,
+                savingsVault.ownerPubKey,
+                true
+            );
 
-      const tx = await program.methods
-        .updateVault(identifierBuffer, accountNameBuffer, { spare: {} }, false)
-        .accounts(accounts)
-        .signers([provider.wallet.payer])
-        .rpc();
+            const accounts = {
+                owner: provider.publicKey,
+                dataAccount,
+                vaultAccount: savingsVault.pubKey,
+                vaultAccountOwner: savingsVault.ownerPubKey,
+                mint,
+                vaultProgram: meteoraVaultProgram,
+                vault,
+                tokenVault,
+                vaultLpMint,
+                user: savingsVault.ownerPubKey,
+                userToken: savingsVault.pubKey,
+                userLp: userLpToken.address,
+                tokenProgram: TOKEN_PROGRAM_ID,
+            };
 
-      console.log("Your transaction signature", tx);
+            const tx = await program.methods
+                .depositLiquidity(identifierBuffer, new anchor.BN(0.2 * Math.pow(10, decimals)))
+                .accounts(accounts)
+                .signers([provider.wallet.payer])
+                .rpc();
 
-      const account = await program.account.vaultManager.fetch(
-        dataAccount
-      );
+            console.log("Your deposit liquidity tx =", tx);
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
 
-      savingsVault = account.accounts.find(x => {
-        const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
-        return nameBufferSlice.toString() == accountName
-      })
+    it("deposit liquidity from savings using diff balance", async () => {
+        try {
+            // Save on ledger current balance of user account
+            const ixSaveBalance = await program.methods
+                .saveAccountBalance()
+                .accounts({
+                    owner: provider.publicKey,
+                    mint,
+                    userTokenAccount: mintAta.address,
+                    ledgerData,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+                })
+                .signers([provider.wallet.payer])
+                .instruction();
 
-      assert.isTrue(savingsVault != undefined)
-      assert.strictEqual(savingsVault.nameLength, accountName.length);
-      assert.isTrue(Buffer.from(savingsVault.name.slice(0, savingsVault.nameLength)).toString() == accountName)
+            // Transfer sol to simulate a difference balance in account (will fail becuase the calculation will give negative in program)
+            const ixTransferWSol = await createTransferCheckedInstruction(
+                mintAta.address,
+                mint,
+                new PublicKey("4BnckD3s5MFdHxyDsJxpG8JP47SXSv8U6kMjGpAKhNdz"),
+                provider.wallet.payer.publicKey,
+                0.1 * Math.pow(10, decimals),
+                9
+            );
 
-    } catch (_error: any) {
-      console.log(_error)
-      assert.fail("Unexpected error type, console.log _error variable")
+            // Deposit liquidity to vault
+            const ixDeposit = await program.methods
+                .depositToVaultWithDiffBalance(identifierBuffer)
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    mint,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    vaultAccount: savingsVault.pubKey,
+                    userTokenAccount: mintAta.address,
+                    ledgerData,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
+                })
+                .signers([provider.wallet.payer])
+                .instruction();
 
-    }
+            // Deposit to liquidity from vault
+            const userLpToken = await getOrCreateAssociatedTokenAccount(
+                connection,
+                provider.wallet.payer,
+                vaultLpMint,
+                savingsVault.ownerPubKey,
+                true
+            );
 
-  })
+            const ixDepositToMeteora = await program.methods
+                .depositLiquidityWithDiffBalance(identifierBuffer)
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    vaultAccount: savingsVault.pubKey,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    mint,
+                    userTokenAccount: mintAta.address,
+                    vaultProgram: meteoraVaultProgram,
+                    vault,
+                    tokenVault,
+                    vaultLpMint,
+                    user: savingsVault.ownerPubKey,
+                    userToken: savingsVault.pubKey,
+                    userLp: userLpToken.address,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    ledgerData,
+                })
+                .signers([provider.wallet.payer])
+                .instruction();
 
-  xit("Delete account vault", async () => {
+            const instructions = [ixSaveBalance, ixTransferWSol, ixDeposit, ixDepositToMeteora];
 
-    console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
+            const blockhash = (await connection.getLatestBlockhash()).blockhash;
 
-    const tx = await program.methods
-      .deleteVault(identifierBuffer)
-      .accounts({
-        owner: provider.publicKey,
-        dataAccount,
-        vaultAccount: savingsVault.pubKey,
-        mint,
-        userTokenAccount: mintAta.address
-      })
-      .signers([provider.wallet.payer])
-      .rpc();
+            const messageV0 = new TransactionMessage({
+                payerKey: provider.publicKey,
+                recentBlockhash: blockhash,
+                instructions,
+            }).compileToV0Message();
 
-    console.log("Your transaction signature", tx);
+            const transaction = new VersionedTransaction(messageV0);
 
-    const account = await program.account.vaultManager.fetch(
-      dataAccount
-    );
+            transaction.sign([provider.wallet.payer]);
 
-    savingsVault = account.accounts.find(x => {
-      const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
-      return nameBufferSlice.toString() == accountName
-    })
+            const txID = await provider.connection.sendTransaction(transaction);
 
-    assert.isTrue(savingsVault == undefined)
+            console.log({ txID });
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
 
-  });
+    xit("withdraw liquidity to savings", async () => {
+        try {
+            const userLpToken = await getOrCreateAssociatedTokenAccount(
+                connection,
+                provider.wallet.payer,
+                vaultLpMint,
+                savingsVault.ownerPubKey,
+                true
+            );
 
-  it("Delete all account vault", async () => {
+            // console.log('userToken', userLpToken.address, userLpToken.amount)
 
-    // console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
+            const tx = await program.methods
+                .withdrawLiquidity(identifierBuffer, new anchor.BN(userLpToken.amount))
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    vaultAccount: savingsVault.pubKey,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    mint,
+                    meteoraVaultProgram,
+                    vault,
+                    tokenVault,
+                    vaultLpMint,
+                    user: savingsVault.ownerPubKey,
+                    userToken: savingsVault.pubKey,
+                    userLp: userLpToken.address,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .signers([provider.wallet.payer])
+                .rpc();
 
-    try {
+            console.log("Your withdraw liquidity tx =", tx);
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
 
-      const { accounts } = await program.account.vaultManager.fetch(
-        dataAccount
-      );
+    xit("Get number of available accounts", async () => {
+        const account = await program.account.vaultManager.fetch(dataAccount);
 
-      const accountsToDelete = (accounts as any[])
-        .filter(x => {
-          return x.nameLength > 0
-        })
+        const availableSpots = account.accounts
+            .map((x) => x.nameLength == 0)
+            .filter((x) => x == true).length;
 
-      // .forEach(async x => {
-      for (let index = 0; index < accountsToDelete.length; index++) {
-        const account = accountsToDelete[index];
+        assert.isTrue(availableSpots >= 0);
+        assert.isTrue(availableSpots <= 20); // Only 20 accounts max are allowed, check program
+    });
 
-        // console.log('account-->', account.pubKey, account.tokenPubKey)
+    xit("Update account vault", async () => {
+        try {
+            accountName = "New account" + (Math.random() + 1).toString(36).substring(2);
+            accountNameBuffer = Buffer.from(accountName);
+
+            const accounts = {
+                owner: provider.publicKey,
+                dataAccount: dataAccount,
+                mint: mint,
+                vaultAccountOwner: savingsVault.ownerPubKey,
+                vaultAccount: savingsVault.pubKey,
+                systemProgram: anchor.web3.SystemProgram.programId,
+            };
+
+            const tx = await program.methods
+                .updateVault(identifierBuffer, accountNameBuffer, { spare: {} }, false)
+                .accounts(accounts)
+                .signers([provider.wallet.payer])
+                .rpc();
+
+            console.log("Your transaction signature", tx);
+
+            const account = await program.account.vaultManager.fetch(dataAccount);
+
+            savingsVault = account.accounts.find((x) => {
+                const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length));
+                return nameBufferSlice.toString() == accountName;
+            });
+
+            assert.isTrue(savingsVault != undefined);
+            assert.strictEqual(savingsVault.nameLength, accountName.length);
+            assert.isTrue(
+                Buffer.from(savingsVault.name.slice(0, savingsVault.nameLength)).toString() ==
+                    accountName
+            );
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
+
+    xit("Delete account vault", async () => {
+        console.log("delete savingsVault.pubKey ==> ", savingsVault.pubKey.toBase58());
 
         const tx = await program.methods
-          .deleteVault(account.identifier)
-          .accounts({
-            owner: provider.publicKey,
-            dataAccount,
-            vaultAccountOwner: account.ownerPubKey,
-            vaultAccount: account.pubKey,
-            mint: account.tokenPubKey,
-            userTokenAccount: mintAta.address
-          })
-          .signers([provider.wallet.payer])
-          .rpc();
+            .deleteVault(identifierBuffer)
+            .accounts({
+                owner: provider.publicKey,
+                dataAccount,
+                vaultAccount: savingsVault.pubKey,
+                mint,
+                userTokenAccount: mintAta.address,
+            })
+            .signers([provider.wallet.payer])
+            .rpc();
 
-        // console.log("Your transaction signature", tx);
+        console.log("Your transaction signature", tx);
 
-      }
+        const account = await program.account.vaultManager.fetch(dataAccount);
 
+        savingsVault = account.accounts.find((x) => {
+            const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length));
+            return nameBufferSlice.toString() == accountName;
+        });
 
+        assert.isTrue(savingsVault == undefined);
+    });
 
-      const updatedAccount = await program.account.vaultManager.fetch(
-        dataAccount
-      );
+    xit("Delete all account vault", async () => {
+        // console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
 
-      const unDeletedAccounts = updatedAccount.accounts.filter(x => {
-        return x.nameLength > 0
-        // const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
-        // return nameBufferSlice.toString() == accountName
-      })
+        try {
+            const { accounts } = await program.account.vaultManager.fetch(dataAccount);
 
-      assert.isTrue(unDeletedAccounts.length == 0)
-    } catch (error) {
-      console.log(error)
-    }
+            const accountsToDelete = (accounts as any[]).filter((x) => {
+                return x.nameLength > 0;
+            });
 
-  });
+            // .forEach(async x => {
+            for (let index = 0; index < accountsToDelete.length; index++) {
+                const account = accountsToDelete[index];
 
+                // console.log('account-->', account.pubKey, account.tokenPubKey)
+
+                const tx = await program.methods
+                    .deleteVault(account.identifier)
+                    .accounts({
+                        owner: provider.publicKey,
+                        dataAccount,
+                        vaultAccountOwner: account.ownerPubKey,
+                        vaultAccount: account.pubKey,
+                        mint: account.tokenPubKey,
+                        userTokenAccount: mintAta.address,
+                    })
+                    .signers([provider.wallet.payer])
+                    .rpc();
+
+                // console.log("Your transaction signature", tx);
+            }
+
+            const updatedAccount = await program.account.vaultManager.fetch(dataAccount);
+
+            const unDeletedAccounts = updatedAccount.accounts.filter((x) => {
+                return x.nameLength > 0;
+                // const nameBufferSlice = Buffer.from(x.name.slice(0, accountNameBuffer.length))
+                // return nameBufferSlice.toString() == accountName
+            });
+
+            assert.isTrue(unDeletedAccounts.length == 0);
+        } catch (error) {
+            console.log(error);
+        }
+    });
 });

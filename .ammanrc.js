@@ -4,9 +4,9 @@ module.exports = {
         programs: [],
         accounts: [
             {
-                label: "Token Program",
-                accountId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                label: "Jupiter V6",
                 executable: true,
+                accountId: "JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4",
                 cluster: "https://rpc.helius.xyz/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261",
             },
             {
