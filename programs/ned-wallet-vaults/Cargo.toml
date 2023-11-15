@@ -20,4 +20,4 @@ anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl = "0.26.0"
 bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"]}
 solana-program = "1.16.0"
-mercurial-vault = { version = "0.4.7", features = ["cpi"] }
+mercurial-vault = { git = "https://github.com/mercurial-finance/vault-sdk", rev="9ea05048146878f5e22549ce270d0e5d6776ccc9", features = ["cpi"] }

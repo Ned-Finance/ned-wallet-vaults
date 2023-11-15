@@ -64,6 +64,9 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     pub user: UncheckedAccount<'info>,
     /// CHECK:
     #[account(mut)]
+    pub partner: UncheckedAccount<'info>,
+    /// CHECK:
+    #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
     /// CHECK:
     #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
@@ -87,6 +90,20 @@ pub fn handler(
     let balance_transfered_to_vault = ctx.accounts.ledger_data.amount;
 
     msg!("Balance transfered to vault to be transfered to Meteora: {:?}", balance_transfered_to_vault);
+
+    // let (user_meteora_account, _bump) = Pubkey::find_program_address(
+    //     &[
+    //         &ctx.accounts.partner.key.as_ref(),
+    //         &ctx.accounts.owner.key.as_ref(),
+    //     ],
+    //     &MercurialVault::id(),
+    // );
+
+    // if **ctx.accounts.user.try_borrow_lamports()? > 0 {
+    //     msg!("This account has been initialized");
+    // } else {
+    //     msg!("Account is not initialized");
+    // }
 
     let data_account = &mut ctx.accounts.data_account.load()?;
 

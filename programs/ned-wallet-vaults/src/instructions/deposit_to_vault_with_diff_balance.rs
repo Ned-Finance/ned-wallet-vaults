@@ -46,10 +46,6 @@ pub struct DepositToVaultWithDiffBalance<'info> {
 
     pub token_program: Program<'info, Token>,
 
-    /// CHECK: check instructions account
-    #[account(address = sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-
     #[account(
         mut,
         seeds = [LEDGER_PDA_DATA, owner.key.as_ref()],

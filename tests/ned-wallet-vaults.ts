@@ -12,12 +12,7 @@ import {
     mintTo,
     transfer,
 } from "@solana/spl-token";
-import {
-    PublicKey,
-    SYSVAR_INSTRUCTIONS_PUBKEY,
-    TransactionMessage,
-    VersionedTransaction,
-} from "@solana/web3.js";
+import { PublicKey, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import { assert } from "chai";
 import * as shortuuid from "short-uuid";
 import { NedWalletVaults } from "../target/types/ned_wallet_vaults";
@@ -71,6 +66,7 @@ describe("ned-wallet-vaults", () => {
 
     // Start Meteora
     const meteoraVaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi");
+    // const meteoraVaultProgram = new PublicKey("GacY9YuN16HNRTy7ZWwULPccwvfFSBeNLuAQP7y38Du3");
     const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM");
     const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT");
 
@@ -78,6 +74,7 @@ describe("ned-wallet-vaults", () => {
         [Buffer.from("token_vault"), vault.toBuffer()],
         meteoraVaultProgram
     );
+    const partnerAccount = new PublicKey("AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs");
     // End Meteora
 
     const [ledgerData] = PublicKey.findProgramAddressSync(
@@ -318,7 +315,6 @@ describe("ned-wallet-vaults", () => {
                 userTokenAccount: mintAta.address,
                 ledgerData,
                 tokenProgram: TOKEN_PROGRAM_ID,
-                instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
             })
             .signers([provider.wallet.payer])
             .instruction();
@@ -452,7 +448,6 @@ describe("ned-wallet-vaults", () => {
                     userTokenAccount: mintAta.address,
                     ledgerData,
                     tokenProgram: TOKEN_PROGRAM_ID,
-                    instructions: SYSVAR_INSTRUCTIONS_PUBKEY,
                 })
                 .signers([provider.wallet.payer])
                 .instruction();
@@ -465,6 +460,11 @@ describe("ned-wallet-vaults", () => {
                 savingsVault.ownerPubKey,
                 true
             );
+
+            // const [userMeteoraPda] = PublicKey.findProgramAddressSync(
+            //     [partnerAccount.toBuffer(), savingsVault.ownerPubKey.toBuffer()],
+            //     meteoraVaultProgram
+            // );
 
             const ixDepositToMeteora = await program.methods
                 .depositLiquidityWithDiffBalance(identifierBuffer)
@@ -480,6 +480,8 @@ describe("ned-wallet-vaults", () => {
                     tokenVault,
                     vaultLpMint,
                     user: savingsVault.ownerPubKey,
+                    // user: userMeteoraPda,
+                    partner: partnerAccount,
                     userToken: savingsVault.pubKey,
                     userLp: userLpToken.address,
                     tokenProgram: TOKEN_PROGRAM_ID,
