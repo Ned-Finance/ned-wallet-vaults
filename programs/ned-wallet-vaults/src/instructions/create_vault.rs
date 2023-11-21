@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::state::vaults::{VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER, SpareType, VaultManager, VaultOwner};
 use crate::errors::vaults::VaultsAccountsError;
 use crate::utils::vaults::{name_is_empty, get_name_array};
@@ -58,7 +60,7 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
         return Err(error!(VaultsAccountsError::AccountNameEmpty));
     }
 
-    let default_pubkey  = pubkey!("11111111111111111111111111111111"); 
+    let default_pubkey  = Pubkey::from_str("11111111111111111111111111111111").expect("Error parsing solana default address"); 
 
     let data_account = &mut match ctx.accounts.data_account.load_init() {
         Ok(result) => result,

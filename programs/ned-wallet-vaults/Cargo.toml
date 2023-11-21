@@ -18,6 +18,7 @@ default = []
 [dependencies]
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
 anchor-spl = "0.26.0"
+solana-program = "1.16.12"
 bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"]}
-solana-program = "1.16.0"
-mercurial-vault = { git = "https://github.com/mercurial-finance/vault-sdk", rev="9ea05048146878f5e22549ce270d0e5d6776ccc9", features = ["cpi"] }
+mercurial-vault = { git = "https://github.com/mercurial-finance/vault-sdk", rev="ccc3132e97ed25bff677e88fc06f7db5e43332ca", features = ["cpi"] }
+affiliate = { git = "https://github.com/MeteoraAg/vault-periphery", rev = "677980c418893c8ede86281c92e52cc2fb36d4b8", features = ["cpi", "no-entrypoint"] }

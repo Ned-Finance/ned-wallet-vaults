@@ -66,7 +66,7 @@ describe("ned-wallet-vaults", () => {
 
     // Start Meteora
     const meteoraVaultProgram = new PublicKey("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi");
-    // const meteoraVaultProgram = new PublicKey("GacY9YuN16HNRTy7ZWwULPccwvfFSBeNLuAQP7y38Du3");
+    const meteoraAfilliateProgram = new PublicKey("GacY9YuN16HNRTy7ZWwULPccwvfFSBeNLuAQP7y38Du3");
     const vaultLpMint = new PublicKey("BvoAjwEDhpLzs3jtu4H72j96ShKT5rvZE9RP1vgpfSM");
     const vault = new PublicKey("FERjPVNEa7Udq8CEv68h6tPL46Tq7ieE49HrE2wea3XT");
 
@@ -74,7 +74,6 @@ describe("ned-wallet-vaults", () => {
         [Buffer.from("token_vault"), vault.toBuffer()],
         meteoraVaultProgram
     );
-    const partnerAccount = new PublicKey("AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs");
     // End Meteora
 
     const [ledgerData] = PublicKey.findProgramAddressSync(
@@ -426,7 +425,7 @@ describe("ned-wallet-vaults", () => {
                 .signers([provider.wallet.payer])
                 .instruction();
 
-            // Transfer sol to simulate a difference balance in account (will fail becuase the calculation will give negative in program)
+            // Transfer sol to simulate a difference balance in account (need to change abs in program to make the trick)
             const ixTransferWSol = await createTransferCheckedInstruction(
                 mintAta.address,
                 mint,
@@ -461,10 +460,32 @@ describe("ned-wallet-vaults", () => {
                 true
             );
 
-            // const [userMeteoraPda] = PublicKey.findProgramAddressSync(
-            //     [partnerAccount.toBuffer(), savingsVault.ownerPubKey.toBuffer()],
-            //     meteoraVaultProgram
-            // );
+            const partnerAccount = new PublicKey("AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs");
+            const partnerATA = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                provider.wallet.payer,
+                mint,
+                partnerAccount
+            );
+
+            const [partnerPda] = PublicKey.findProgramAddressSync(
+                [vault.toBuffer(), partnerATA.address.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            console.log("vault:", vault.toBase58());
+            console.log("partnerATA:", partnerATA.address.toBase58());
+            console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
+            console.log("==============================================");
+
+            const [userMeteoraPda] = PublicKey.findProgramAddressSync(
+                [partnerPda.toBuffer(), provider.publicKey.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            console.log("partnerPda:", partnerPda.toBase58());
+            console.log("savingsVault.ownerPubKey:", savingsVault.ownerPubKey.toBase58());
+            console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
 
             const ixDepositToMeteora = await program.methods
                 .depositLiquidityWithDiffBalance(identifierBuffer)
@@ -476,15 +497,17 @@ describe("ned-wallet-vaults", () => {
                     mint,
                     userTokenAccount: mintAta.address,
                     vaultProgram: meteoraVaultProgram,
+                    affiliateProgram: meteoraAfilliateProgram,
                     vault,
                     tokenVault,
                     vaultLpMint,
                     user: savingsVault.ownerPubKey,
                     // user: userMeteoraPda,
-                    partner: partnerAccount,
+                    partner: partnerPda,
                     userToken: savingsVault.pubKey,
                     userLp: userLpToken.address,
                     tokenProgram: TOKEN_PROGRAM_ID,
+                    systemProgram: anchor.web3.SystemProgram.programId,
                     ledgerData,
                 })
                 .signers([provider.wallet.payer])
@@ -631,7 +654,7 @@ describe("ned-wallet-vaults", () => {
         assert.isTrue(savingsVault == undefined);
     });
 
-    xit("Delete all account vault", async () => {
+    it("Delete all account vault", async () => {
         // console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
 
         try {

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
 use anchor_lang::prelude::*;
@@ -76,7 +78,7 @@ pub fn handler(
 
             account.name = [0;30];
             account.spare_type = 0;
-            account.pub_key = pubkey!("11111111111111111111111111111111");
+            account.pub_key = Pubkey::from_str("11111111111111111111111111111111").expect("Error parsing solana default address"); 
             account.name_length = 0;
             account.identifier = [0;22];
             
