@@ -73,21 +73,21 @@ pub fn handler(
 
     let data_account = &mut ctx.accounts.data_account.load()?;
 
-    // return deposit_liquidity(
-    //     &ctx.accounts.owner,
-    //     &ctx.accounts.vault_account,
-    //     data_account,
-    //     &ctx.accounts.vault,
-    //     &ctx.accounts.vault_lp_mint,
-    //     &ctx.accounts.user_token,
-    //     &ctx.accounts.user_lp,
-    //     &ctx.accounts.user,
-    //     &ctx.accounts.token_vault,
-    //     &ctx.accounts.token_program,
-    //     &ctx.program_id,
-    //     &ctx.accounts.vault_program,
-    //     _identifier,
-    //     amount
-    // );
-    Ok(())
+    return deposit_liquidity(
+        &ctx.accounts.owner,
+        data_account,
+        &ctx.accounts.vault_account,
+        &ctx.accounts.vault_program,
+        &ctx.accounts.vault,
+        &ctx.accounts.vault_lp_mint,
+        &ctx.accounts.user_token,
+        &ctx.accounts.user_lp,
+        &ctx.accounts.user,
+        &ctx.accounts.token_vault,
+        &ctx.accounts.token_program,
+        &ctx.program_id,
+        _identifier,
+        amount
+    );
+    // Ok(())
 }

@@ -460,33 +460,6 @@ describe("ned-wallet-vaults", () => {
                 true
             );
 
-            const partnerAccount = new PublicKey("AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs");
-            const partnerATA = await getOrCreateAssociatedTokenAccount(
-                provider.connection,
-                provider.wallet.payer,
-                mint,
-                partnerAccount
-            );
-
-            const [partnerPda] = PublicKey.findProgramAddressSync(
-                [vault.toBuffer(), partnerATA.address.toBuffer()],
-                meteoraAfilliateProgram
-            );
-
-            console.log("vault:", vault.toBase58());
-            console.log("partnerATA:", partnerATA.address.toBase58());
-            console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
-            console.log("==============================================");
-
-            const [userMeteoraPda] = PublicKey.findProgramAddressSync(
-                [partnerPda.toBuffer(), provider.publicKey.toBuffer()],
-                meteoraAfilliateProgram
-            );
-
-            console.log("partnerPda:", partnerPda.toBase58());
-            console.log("savingsVault.ownerPubKey:", savingsVault.ownerPubKey.toBase58());
-            console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
-
             const ixDepositToMeteora = await program.methods
                 .depositLiquidityWithDiffBalance(identifierBuffer)
                 .accounts({
@@ -495,19 +468,14 @@ describe("ned-wallet-vaults", () => {
                     vaultAccount: savingsVault.pubKey,
                     vaultAccountOwner: savingsVault.ownerPubKey,
                     mint,
-                    userTokenAccount: mintAta.address,
                     vaultProgram: meteoraVaultProgram,
-                    affiliateProgram: meteoraAfilliateProgram,
                     vault,
                     tokenVault,
                     vaultLpMint,
                     user: savingsVault.ownerPubKey,
-                    // user: userMeteoraPda,
-                    partner: partnerPda,
                     userToken: savingsVault.pubKey,
                     userLp: userLpToken.address,
                     tokenProgram: TOKEN_PROGRAM_ID,
-                    systemProgram: anchor.web3.SystemProgram.programId,
                     ledgerData,
                 })
                 .signers([provider.wallet.payer])

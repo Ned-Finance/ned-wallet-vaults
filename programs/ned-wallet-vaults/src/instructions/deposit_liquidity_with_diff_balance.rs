@@ -39,40 +39,29 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
-    #[account(
-        mut,
-        token::mint = mint, 
-        token::authority = owner,
-    )]
-    pub user_token_account: Account<'info, TokenAccount>,
-
+    /// CHECK:
     pub vault_program: Program<'info, MercurialVault>,
-    pub affiliate_program: Program<'info, Affiliate>,
+    /// CHECK:
     #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     /// CHECK:
     #[account(mut)]
     pub token_vault: UncheckedAccount<'info>,
-
+    /// CHECK:
     #[account(mut)]
     pub vault_lp_mint: Box<Account<'info, Mint>>,
     /// CHECK:
     #[account(mut)]
     pub user: UncheckedAccount<'info>,
-    // pub partner: Box<Account<'info, Partner>>,
-    /// CHECK:
-    pub partner: UncheckedAccount<'info>,
     /// CHECK:
     #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
-
+    /// CHECK:
     #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
     pub user_lp: Box<Account<'info, TokenAccount>>,
-
+    /// CHECK:
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
-
+    
     #[account(
         mut,
         seeds = [LEDGER_PDA_DATA, owner.key.as_ref()],
@@ -89,22 +78,14 @@ pub fn handler(
     let balance_transfered_to_vault = ctx.accounts.ledger_data.amount;
 
     msg!("Balance transfered to vault to be transfered to Meteora: {:?}", balance_transfered_to_vault);
-
-    // let (user_meteora_account, _bump) = Pubkey::find_program_address(
-    //     &[
-    //         &ctx.accounts.partner.key.as_ref(),
-    //         &ctx.accounts.owner.key.as_ref(),
-    //     ],
-    //     &MercurialVault::id(),
-    // );
-
+    
     let data_account = &mut ctx.accounts.data_account.load()?;
 
     return deposit_liquidity(
         &ctx.accounts.owner,
-        &ctx.accounts.partner,
-        &ctx.accounts.vault_account,
         data_account,
+        &ctx.accounts.vault_account,
+        &ctx.accounts.vault_program,
         &ctx.accounts.vault,
         &ctx.accounts.vault_lp_mint,
         &ctx.accounts.user_token,
@@ -112,11 +93,7 @@ pub fn handler(
         &ctx.accounts.user,
         &ctx.accounts.token_vault,
         &ctx.accounts.token_program,
-        &ctx.accounts.system_program,
-        &ctx.accounts.rent,
         &ctx.program_id,
-        &ctx.accounts.vault_program,
-        &ctx.accounts.affiliate_program,
         _identifier,
         balance_transfered_to_vault
     );
