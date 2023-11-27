@@ -22,7 +22,7 @@ pub struct VaultAccount {
     pub owner_pub_key: Pubkey,
     pub spare_type: u8,
     pub automatic_days_period: u8,
-    pub earnings_enabled: bool,
+    pub earnings_enabled: u8,
     pub identifier: [u8; 22],
 }
 

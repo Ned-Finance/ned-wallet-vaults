@@ -88,7 +88,7 @@ pub fn deposit_liquidity<'info>(
             .find(|x| x.pub_key.key() == vault_account.key());
 
         if let Some(vault_account) = account_found {
-            if vault_account.earnings_enabled == true {
+            if vault_account.earnings_enabled == 1 {
                 msg!("Deposit started {}", amount);
 
                 // return Ok(());

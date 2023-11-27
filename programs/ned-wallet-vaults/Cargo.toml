@@ -16,9 +16,8 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { version = "0.26.0", features = ["init-if-needed"] }
-anchor-spl = "0.26.0"
-solana-program = "1.16.12"
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
+anchor-spl = "0.28.0"
 bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"]}
-mercurial-vault = { git = "https://github.com/mercurial-finance/vault-sdk", rev="ccc3132e97ed25bff677e88fc06f7db5e43332ca", features = ["cpi"] }
-affiliate = { git = "https://github.com/MeteoraAg/vault-periphery", rev = "677980c418893c8ede86281c92e52cc2fb36d4b8", features = ["cpi", "no-entrypoint"] }
+mercurial-vault = { git = "https://github.com/mercurial-finance/vault-sdk", rev="b8c4e9f2b6ef28550a2145e11dc68a7cdf953c0d", features = ["cpi"] }
+affiliate = { git = "https://github.com/MeteoraAg/vault-periphery", branch="pump_version", features = ["cpi", "no-entrypoint"] }

@@ -42,7 +42,7 @@ pub fn handler(
     _identifier: [u8;22],
     new_name:Vec<u8>,
     spare_type: SpareType,
-    earnings_enabled: bool,
+    earnings_enabled: u8,
 ) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&new_name) {

@@ -54,7 +54,7 @@ pub struct CreateVault<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spare_type: SpareType, earnings_enabled:bool) -> Result<()> {
+pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spare_type: SpareType, earnings_enabled:u8) -> Result<()> {
     // Accounts can't be empty
     if name_is_empty(&name) {
         return Err(error!(VaultsAccountsError::AccountNameEmpty));

@@ -20,7 +20,7 @@ pub mod ned_wallet_vaults {
         name: Vec<u8>,
         identifier: [u8; 22],
         account_type: SpareType,
-        earnings_enabled: bool,
+        earnings_enabled: u8,
     ) -> Result<()> {
         create_vault::handler(ctx, name, identifier, account_type, earnings_enabled)
     }
@@ -30,7 +30,7 @@ pub mod ned_wallet_vaults {
         identifier: [u8; 22],
         new_name: Vec<u8>,
         account_type: SpareType,
-        earnings_enabled: bool,
+        earnings_enabled: u8,
     ) -> Result<()> {
         update_vault::handler(ctx, identifier, new_name, account_type, earnings_enabled)
     }

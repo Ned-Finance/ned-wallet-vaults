@@ -24,16 +24,19 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     pub mint: Account<'info, Mint>, 
 
     #[account(
-        mut,
+        init_if_needed,
         seeds = [VAULTS_PDA_ACCOUNT_OWNER, owner.key.as_ref(), &identifier],
-        bump
+        bump,
+        payer = owner,
+        space = VaultOwner::LEN + 8
     )]
     pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
 
     #[account(
-        mut,
+        init_if_needed,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
+        payer = owner,
         token::mint = mint, 
         token::authority = vault_account_owner,
     )]

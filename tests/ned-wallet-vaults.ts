@@ -5,7 +5,6 @@ import {
     Account,
     TOKEN_PROGRAM_ID,
     createMint,
-    createMintToInstruction,
     createTransferCheckedInstruction,
     getAccount,
     getOrCreateAssociatedTokenAccount,
@@ -296,11 +295,14 @@ describe("ned-wallet-vaults", () => {
             .signers([provider.wallet.payer])
             .instruction();
 
-        const mintToAccountIx = createMintToInstruction(
-            mint,
+        // Transfer sol to simulate a difference balance in account (need to change abs in program to make the trick)
+        const ixTransferWSol = await createTransferCheckedInstruction(
             mintAta.address,
-            provider.publicKey,
-            newTokensAmount
+            mint,
+            new PublicKey("4BnckD3s5MFdHxyDsJxpG8JP47SXSv8U6kMjGpAKhNdz"),
+            provider.wallet.payer.publicKey,
+            0.1 * Math.pow(10, decimals),
+            9
         );
 
         const ixDeposit = await program.methods
@@ -318,7 +320,7 @@ describe("ned-wallet-vaults", () => {
             .signers([provider.wallet.payer])
             .instruction();
 
-        const instructions = [ixSaveBalance, mintToAccountIx, ixDeposit];
+        const instructions = [ixSaveBalance, ixTransferWSol, ixDeposit];
 
         const blockhash = (await connection.getLatestBlockhash()).blockhash;
 
