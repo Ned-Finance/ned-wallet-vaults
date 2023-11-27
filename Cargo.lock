@@ -39,16 +39,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "affiliate"
-version = "0.1.1"
-source = "git+https://github.com/MeteoraAg/vault-periphery?rev=677980c418893c8ede86281c92e52cc2fb36d4b8#677980c418893c8ede86281c92e52cc2fb36d4b8"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "mercurial-vault",
-]
-
-[[package]]
 name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1283,7 +1273,6 @@ dependencies = [
 name = "ned-wallet-vaults"
 version = "0.1.0"
 dependencies = [
- "affiliate",
  "anchor-lang",
  "anchor-spl",
  "bytemuck",

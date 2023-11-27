@@ -1,10 +1,6 @@
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
-use crate::errors::vaults::VaultsAccountsError;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Token, Mint};
-use mercurial_vault::cpi::accounts::DepositWithdrawLiquidity;
-use mercurial_vault::cpi::*;
-use mercurial_vault::instruction::Deposit;
 use mercurial_vault::state::Vault;
 use crate::utils::meteora::MercurialVault;
 use crate::utils::vaults::deposit_liquidity;

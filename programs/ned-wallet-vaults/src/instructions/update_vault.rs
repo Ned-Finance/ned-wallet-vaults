@@ -54,19 +54,25 @@ pub fn handler(
 
     if data_account.owner.key() == ctx.accounts.owner.key() {
         let accounts = &mut data_account.accounts;
-
-        let account_index = accounts.iter_mut()
-            .position(|x| x.pub_key.key() == vault_account.key());
-
-        if let Some(account_found) = account_index {
-            let account = &mut accounts[account_found];
-            account.name_length = new_name.len() as u8;
-            account.name = get_name_array(new_name.clone());
-            account.spare_type = spare_type as u8;
-            account.earnings_enabled = earnings_enabled;
-            Ok(())
+        
+        let vault_with_spare_activated = accounts.iter().find(|x| x.spare_type > 0);
+        if vault_with_spare_activated.is_some() && spare_type as u8 > 0 {
+            return Err(VaultsAccountsError::VaultWithSpareMaxReached.into());
         } else {
-            return Err(error!(VaultsAccountsError::AccountNotFound));
+
+            let account_index = accounts.iter_mut()
+                .position(|x| x.pub_key.key() == vault_account.key());
+
+            if let Some(account_found) = account_index {
+                let account = &mut accounts[account_found];
+                account.name_length = new_name.len() as u8;
+                account.name = get_name_array(new_name.clone());
+                account.spare_type = spare_type as u8;
+                account.earnings_enabled = earnings_enabled;
+                Ok(())
+            } else {
+                return Err(error!(VaultsAccountsError::AccountNotFound));
+            }
         }
     } else {
         return Err(error!(VaultsAccountsError::ActionNotAllowed));

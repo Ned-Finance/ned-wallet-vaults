@@ -1,26 +1,12 @@
 use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::VAULTS_PDA_ACCOUNT_OWNER;
 use crate::utils::meteora::MercurialVault;
-// use affiliate::accounts::DepositWithdrawLiquidity;
-use affiliate::{
-    cpi::accounts::{InitUser, InitUserPermissionless},
-    program::Affiliate,
-};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 use mercurial_vault::{
     cpi::{accounts::DepositWithdrawLiquidity, deposit},
     state::Vault,
 };
-
-// use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
-// use crate::errors::vaults::VaultsAccountsError;
-// use anchor_lang::prelude::*;
-// use mercurial_vault::cpi::accounts::DepositWithdrawLiquidity;
-// use mercurial_vault::cpi::*;
-// use mercurial_vault::instruction::Deposit;
-// use mercurial_vault::state::Vault;
-// use crate::utils::meteora::MercurialVault;
 
 pub fn get_name_array(name: Vec<u8>) -> [u8; 30] {
     let mut fixed: [u8; 30] = [0; 30];

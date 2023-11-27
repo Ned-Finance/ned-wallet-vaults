@@ -20,6 +20,6 @@ pub enum VaultsAccountsError {
     WithdrawalSavingsError,
     #[msg("Vault not found")]
     VaultNotFound,
-    #[msg("Amount in account is over slippage")]
-    AccountBalanceOverSlippage,
+    #[msg("Only one vault with spare is allowed")]
+    VaultWithSpareMaxReached,
 }

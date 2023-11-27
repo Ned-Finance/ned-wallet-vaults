@@ -1,7 +1,5 @@
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
 use crate::state::ledger::{LedgerStore, LEDGER_PDA_DATA};
-use affiliate::Partner;
-use affiliate::program::Affiliate;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Token, Mint};
 use mercurial_vault::state::Vault;
@@ -78,7 +76,7 @@ pub fn handler(
     let balance_transfered_to_vault = ctx.accounts.ledger_data.amount;
 
     msg!("Balance transfered to vault to be transfered to Meteora: {:?}", balance_transfered_to_vault);
-    
+
     let data_account = &mut ctx.accounts.data_account.load()?;
 
     return deposit_liquidity(
