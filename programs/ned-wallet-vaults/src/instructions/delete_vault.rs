@@ -4,7 +4,6 @@ use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, TokenAccount, Mint, Token, Transfer};
-use anchor_lang::solana_program::pubkey;
 
 #[derive(Accounts)]
 #[instruction(identifier:[u8;22])]

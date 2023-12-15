@@ -1,13 +1,14 @@
-use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::VAULTS_PDA_ACCOUNT_OWNER;
 use crate::utils::meteora::MercurialVault;
+use crate::{errors::vaults::VaultsAccountsError, state::vaults::VaultOwner};
 // use affiliate::accounts::DepositWithdrawLiquidity;
 use affiliate::{
     cpi::{
-        accounts::{DepositWithdrawLiquidity, InitUser, InitUserPermissionless},
+        accounts::{DepositWithdrawLiquidity, InitUserPermissionless},
         *,
     },
     program::Affiliate,
+    Partner,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
@@ -60,9 +61,10 @@ pub fn name_is_empty(name: &Vec<u8>) -> bool {
 
 pub fn deposit_liquidity<'info>(
     owner: &Signer<'info>,
-    partner: &UncheckedAccount<'info>,
+    partner: &Box<Account<'info, Partner>>,
     vault_account: &Account<'_, anchor_spl::token::TokenAccount>,
     data_account: &mut std::cell::Ref<'_, crate::state::vaults::VaultManager>,
+    vault_account_owner: &Account<'info, VaultOwner>,
     vault: &Box<Account<'info, Vault>>,
     vault_lp_mint: &Box<Account<'info, Mint>>,
     user_token: &UncheckedAccount<'info>,
@@ -71,7 +73,6 @@ pub fn deposit_liquidity<'info>(
     token_vault: &UncheckedAccount<'info>,
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
-    rent: &Sysvar<'info, Rent>,
     program_id: &Pubkey,
     vault_program: &Program<'info, MercurialVault>,
     affiliate_program: &Program<'info, Affiliate>,
@@ -93,6 +94,39 @@ pub fn deposit_liquidity<'info>(
 
                 // return Ok(());
 
+                // let deposit_withdraw_to_meteora = || {
+
+                // };
+
+                if user.lamports() == 0 {
+                    msg!("User account not initialized");
+                    let accounts_init_user = InitUserPermissionless {
+                        user: user.to_account_info(),
+                        partner: partner.to_account_info(),
+                        owner: vault_account_owner.to_account_info(),
+                        payer: owner.to_account_info(),
+                        system_program: system_program.to_account_info(),
+                    };
+
+                    let cpi_ctx =
+                        CpiContext::new(affiliate_program.to_account_info(), accounts_init_user);
+                    let result = init_user_permissionless(cpi_ctx);
+
+                    match result {
+                        Ok(()) => {
+                            msg!("User was created sucessfully");
+                            // return deposit_withdraw_to_meteora();
+                        }
+                        Err(err) => {
+                            msg!("There was an error creating user {:?}", err);
+                            return Err(VaultsAccountsError::UserInitializationFailed.into());
+                        }
+                    }
+                } else {
+                    msg!("User account is initialized");
+                    // return deposit_withdraw_to_meteora();
+                }
+
                 let (_account, bump) = Pubkey::find_program_address(
                     &[
                         VAULTS_PDA_ACCOUNT_OWNER,
@@ -111,51 +145,29 @@ pub fn deposit_liquidity<'info>(
 
                 let signer = &[&seeds[..]];
 
-                if user.lamports() == 0 {
-                    msg!("User account not initialized");
-                    let accounts_init_user = InitUserPermissionless {
-                        user: user.to_account_info(),
-                        partner: partner.to_account_info(),
-                        owner: owner.to_account_info(),
-                        payer: owner.to_account_info(),
-                        system_program: system_program.to_account_info(),
-                    };
+                let accounts = DepositWithdrawLiquidity {
+                    vault: vault.to_account_info(),
+                    owner: vault_account_owner.to_account_info(),
+                    user_token: user_token.to_account_info(),
+                    user_lp: user_lp.to_account_info(),
+                    user: user.to_account_info(),
+                    vault_lp_mint: vault_lp_mint.to_account_info(),
+                    token_vault: token_vault.to_account_info(),
+                    token_program: token_program.to_account_info(),
+                    vault_program: vault_program.to_account_info(),
+                    partner: partner.to_account_info(),
+                };
 
-                    let cpi_ctx =
-                        CpiContext::new(affiliate_program.to_account_info(), accounts_init_user);
-                    let result = init_user_permissionless(cpi_ctx);
+                let cpi_ctx = CpiContext::new_with_signer(
+                    affiliate_program.to_account_info(),
+                    accounts,
+                    signer,
+                );
+                let result = deposit(cpi_ctx, amount, 0);
 
-                    match result {
-                        Ok(()) => msg!("User was created sucessfully"),
-                        Err(err) => msg!("There was an error creating user {:?}", err),
-                    }
-                } else {
-                    msg!("User account is not initialized");
-                }
+                msg!("Deposit ended {}", amount);
 
-                // let accounts = DepositWithdrawLiquidity {
-                //     vault: vault.to_account_info(),
-                //     owner: owner.to_account_info(),
-                //     user_token: user_token.to_account_info(),
-                //     user_lp: user_lp.to_account_info(),
-                //     user: user.to_account_info(),
-                //     vault_lp_mint: vault_lp_mint.to_account_info(),
-                //     token_vault: token_vault.to_account_info(),
-                //     token_program: token_program.to_account_info(),
-                //     vault_program: vault_program.to_account_info(),
-                //     partner: partner.to_account_info(),
-                // };
-
-                // let cpi_ctx = CpiContext::new_with_signer(
-                //     affiliate_program.to_account_info(),
-                //     accounts,
-                //     signer,
-                // );
-                // let result = deposit(cpi_ctx, amount, 0);
-
-                // msg!("Deposit ended {}", amount);
-
-                // return result;
+                return result;
             } else {
                 return Err(error!(VaultsAccountsError::EarningsNotEnabled));
             }

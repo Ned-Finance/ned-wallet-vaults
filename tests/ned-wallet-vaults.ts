@@ -235,11 +235,70 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
+    xit("Create two vaults with spare", async () => {
+        try {
+            const vault1Tx = await program.methods
+                .createVault(accountNameBuffer, identifierBuffer, { spare: {} }, true)
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    vaultAccount,
+                    vaultAccountOwner,
+                    mint,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+                })
+                .signers([provider.wallet.payer])
+                .rpc();
+
+            try {
+                await program.methods
+                    .createVault(accountNameBuffer, identifierBuffer, { spare: {} }, true)
+                    .accounts({
+                        owner: provider.publicKey,
+                        dataAccount,
+                        vaultAccount,
+                        vaultAccountOwner,
+                        mint,
+                        systemProgram: anchor.web3.SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+                    })
+                    .signers([provider.wallet.payer])
+                    .rpc();
+                console.log("Create vault with spare 1", vault1Tx);
+            } catch (_error) {
+                assert.isTrue(_error instanceof AnchorError);
+                assert.strictEqual(_error.error.errorCode.code, "VaultWithSpareMaxReached");
+            }
+        } catch (_error: any) {
+            console.log("Create account error =>", _error);
+            if (_error instanceof AnchorError) {
+                const alreadyInitializedMsg = "This account was already initialized";
+
+                assert.isTrue(_error instanceof AnchorError);
+                assert.strictEqual(_error.error.errorMessage, alreadyInitializedMsg);
+                assert.strictEqual(_error.error.errorCode.code, "AlreadyInitialized");
+                assert.strictEqual(_error.error.errorCode.number, 6000);
+                assert.strictEqual(_error.program.toString(), program.programId.toString());
+
+                assert.fail(
+                    "Failed to create a new savings account, error received was correct but not expected in the test. Reset test validator and try again."
+                );
+            } else {
+                assert.fail("Unexpected error type, console.log _error variable");
+            }
+        }
+    });
+
     it("deposit money to vault", async () => {
         try {
             const amount = 0.2 * Math.pow(10, decimals);
 
-            const transferTx = await transfer(
+            await transfer(
                 connection,
                 provider.wallet.payer,
                 mintAta.address,
@@ -256,7 +315,7 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
-    xit("deposit to vault from instruction", async () => {
+    xit("deposit to Ned vault from instruction", async () => {
         // pub owner: Signer<'info>,
         // pub data_account: AccountLoader<'info, VaultManager>,
         // pub mint: Account<'info, Mint>,
@@ -269,18 +328,10 @@ describe("ned-wallet-vaults", () => {
         const account = await getAccount(provider.connection, mintAta.address);
 
         const initialBalance = new anchor.BN(Number(account.amount));
-        const slippage = new anchor.BN(50);
         const newTokensAmount = 10 * Math.pow(10, decimals);
-        const expectedAmount = new anchor.BN(newTokensAmount).sub(
-            new anchor.BN(0.3 * Math.pow(10, decimals))
-        );
-
-        console.log("expectedAmount", expectedAmount.toNumber());
 
         console.info("Initial balance", initialBalance);
         console.info("New tokens to mint", newTokensAmount);
-        console.info("Expected amount to receive", expectedAmount);
-        console.info("Slippage", slippage);
 
         const ixSaveBalance = await program.methods
             .saveAccountBalance()
@@ -296,13 +347,13 @@ describe("ned-wallet-vaults", () => {
             .instruction();
 
         // Transfer sol to simulate a difference balance in account (need to change abs in program to make the trick)
-        const ixTransferWSol = await createTransferCheckedInstruction(
+        const ixTransferWSol = createTransferCheckedInstruction(
             mintAta.address,
             mint,
-            new PublicKey("4BnckD3s5MFdHxyDsJxpG8JP47SXSv8U6kMjGpAKhNdz"),
-            provider.wallet.payer.publicKey,
-            0.1 * Math.pow(10, decimals),
-            9
+            savingsVault.pubKey,
+            provider.publicKey,
+            newTokensAmount,
+            decimals
         );
 
         const ixDeposit = await program.methods
@@ -345,7 +396,7 @@ describe("ned-wallet-vaults", () => {
         // }
     });
 
-    xit("withdraw from vault", async () => {
+    xit("withdraw from Ned vault", async () => {
         try {
             console.log("mintAta.address", mintAta.address);
 
@@ -372,7 +423,7 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
-    xit("deposit liquidity from savings", async () => {
+    xit("deposit liquidity from Ned vault", async () => {
         try {
             const userLpToken = await getOrCreateAssociatedTokenAccount(
                 connection,
@@ -411,7 +462,7 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
-    it("deposit liquidity from savings using diff balance", async () => {
+    it("deposit to vault and provide liquidity from Ned vault using diff balance", async () => {
         try {
             // Save on ledger current balance of user account
             const ixSaveBalance = await program.methods
@@ -454,13 +505,6 @@ describe("ned-wallet-vaults", () => {
                 .instruction();
 
             // Deposit to liquidity from vault
-            const userLpToken = await getOrCreateAssociatedTokenAccount(
-                connection,
-                provider.wallet.payer,
-                vaultLpMint,
-                savingsVault.ownerPubKey,
-                true
-            );
 
             const partnerAccount = new PublicKey("AJBbXVqxBAhLHsQvasXnn58aJTjZixKeAsW1KnPeraDs");
             const partnerATA = await getOrCreateAssociatedTokenAccount(
@@ -481,7 +525,7 @@ describe("ned-wallet-vaults", () => {
             console.log("==============================================");
 
             const [userMeteoraPda] = PublicKey.findProgramAddressSync(
-                [partnerPda.toBuffer(), provider.publicKey.toBuffer()],
+                [partnerPda.toBuffer(), savingsVault.ownerPubKey.toBuffer()],
                 meteoraAfilliateProgram
             );
 
@@ -489,14 +533,23 @@ describe("ned-wallet-vaults", () => {
             console.log("savingsVault.ownerPubKey:", savingsVault.ownerPubKey.toBase58());
             console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
 
+            const userLpToken = await getOrCreateAssociatedTokenAccount(
+                connection,
+                provider.wallet.payer,
+                vaultLpMint,
+                userMeteoraPda,
+                true
+            );
+            console.log("userLpToken", userLpToken.owner);
+
             const ixDepositToMeteora = await program.methods
                 .depositLiquidityWithDiffBalance(identifierBuffer)
                 .accounts({
                     owner: provider.publicKey,
                     dataAccount,
-                    vaultAccount: savingsVault.pubKey,
-                    vaultAccountOwner: savingsVault.ownerPubKey,
                     mint,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    vaultAccount: savingsVault.pubKey,
                     userTokenAccount: mintAta.address,
                     vaultProgram: meteoraVaultProgram,
                     affiliateProgram: meteoraAfilliateProgram,
@@ -538,7 +591,7 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
-    xit("withdraw liquidity to savings", async () => {
+    xit("withdraw liquidity to Ned vault", async () => {
         try {
             const userLpToken = await getOrCreateAssociatedTokenAccount(
                 connection,
@@ -558,7 +611,7 @@ describe("ned-wallet-vaults", () => {
                     vaultAccount: savingsVault.pubKey,
                     vaultAccountOwner: savingsVault.ownerPubKey,
                     mint,
-                    meteoraVaultProgram,
+                    vaultProgram: meteoraVaultProgram,
                     vault,
                     tokenVault,
                     vaultLpMint,
@@ -588,7 +641,7 @@ describe("ned-wallet-vaults", () => {
         assert.isTrue(availableSpots <= 20); // Only 20 accounts max are allowed, check program
     });
 
-    xit("Update account vault", async () => {
+    xit("Update Ned account vault", async () => {
         try {
             accountName = "New account" + (Math.random() + 1).toString(36).substring(2);
             accountNameBuffer = Buffer.from(accountName);
@@ -629,7 +682,7 @@ describe("ned-wallet-vaults", () => {
         }
     });
 
-    xit("Delete account vault", async () => {
+    xit("Delete Ned account vault", async () => {
         console.log("delete savingsVault.pubKey ==> ", savingsVault.pubKey.toBase58());
 
         const tx = await program.methods
@@ -656,7 +709,7 @@ describe("ned-wallet-vaults", () => {
         assert.isTrue(savingsVault == undefined);
     });
 
-    it("Delete all account vault", async () => {
+    it("Delete all Ned account vault", async () => {
         // console.log('delete savingsVault.pubKey ==> ', savingsVault.pubKey.toBase58())
 
         try {
@@ -681,6 +734,7 @@ describe("ned-wallet-vaults", () => {
                         vaultAccount: account.pubKey,
                         mint: account.tokenPubKey,
                         userTokenAccount: mintAta.address,
+                        systemProgram: anchor.web3.SystemProgram.programId,
                     })
                     .signers([provider.wallet.payer])
                     .rpc();

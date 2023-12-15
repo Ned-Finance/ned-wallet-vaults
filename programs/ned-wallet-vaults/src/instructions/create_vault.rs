@@ -7,7 +7,6 @@ use crate::utils::vaults::{name_is_empty, get_name_array};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount };
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_lang::solana_program::pubkey;
 
 
 
@@ -66,7 +65,6 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
         Ok(result) => result,
         Err(_) => ctx.accounts.data_account.load_mut().unwrap()
     };
-    
 
     let vault_account = &mut ctx.accounts.vault_account;
     let vault_account_owner = &mut ctx.accounts.vault_account_owner;
@@ -75,29 +73,36 @@ pub fn handler(ctx: Context<CreateVault>, name: Vec<u8>, identifier:[u8;22], spa
     data_account.owner = ctx.accounts.owner.key();
 
     let user_accounts = &mut data_account.accounts;
-    let first_available_slot_index = user_accounts.iter().position(|x| x.pub_key == default_pubkey);
+    let vault_with_spare_activated = user_accounts.iter().find(|x| x.spare_type > 0);
 
-    if first_available_slot_index.is_some() {
-
-        let index = first_available_slot_index.unwrap();
-
-            let account_to_replace = &mut user_accounts[index];
-
-            account_to_replace.pub_key = vault_account.key();
-            account_to_replace.owner_pub_key = vault_account_owner.key();
-            account_to_replace.token_pub_key = mint.key();
-            
-            account_to_replace.name = get_name_array(name.clone());
-            account_to_replace.name_length = (&name).len() as u8;
-            account_to_replace.spare_type = spare_type as u8;
-            account_to_replace.earnings_enabled = earnings_enabled;
-            account_to_replace.identifier = identifier;
-
-            return Ok(());
-        
+    if vault_with_spare_activated.is_some() && spare_type as u8 > 0 {
+        return Err(VaultsAccountsError::VaultWithSpareMaxReached.into());
     } else {
-        return Err(error!(VaultsAccountsError::MaxAccountsReached))
-    }            
+
+        let first_available_slot_index = user_accounts.iter().position(|x| x.pub_key == default_pubkey);
+        if first_available_slot_index.is_some() {
+
+            let index = first_available_slot_index.unwrap();
+
+                let account_to_replace = &mut user_accounts[index];
+
+                account_to_replace.pub_key = vault_account.key();
+                account_to_replace.owner_pub_key = vault_account_owner.key();
+                account_to_replace.token_pub_key = mint.key();
+                
+                account_to_replace.name = get_name_array(name.clone());
+                account_to_replace.name_length = (&name).len() as u8;
+                account_to_replace.spare_type = spare_type as u8;
+                account_to_replace.earnings_enabled = earnings_enabled;
+                account_to_replace.identifier = identifier;
+
+                return Ok(());
+            
+        } else {
+            return Err(error!(VaultsAccountsError::MaxAccountsReached))
+        }            
+
+    }       
 
   
 }

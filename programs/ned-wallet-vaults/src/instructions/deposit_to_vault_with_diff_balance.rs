@@ -3,7 +3,6 @@ use crate::state::ledger::{LedgerStore, LEDGER_PDA_DATA};
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_ACCOUNT_OWNER, VAULTS_PDA_ACCOUNT, VAULTS_PDA_DATA};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, TokenAccount, Mint, Token, Transfer};
-use anchor_lang::solana_program::sysvar;
 
 #[derive(Accounts)]
 #[instruction(identifier: [u8;22])]

@@ -24,19 +24,16 @@ pub struct WithdrawLiquidity<'info> {
     pub mint: Account<'info, Mint>, 
 
     #[account(
-        init_if_needed,
+        mut,
         seeds = [VAULTS_PDA_ACCOUNT_OWNER, owner.key.as_ref(), &identifier],
-        bump,
-        payer = owner,
-        space = VaultOwner::LEN + 8
+        bump
     )]
     pub vault_account_owner: Account<'info, VaultOwner>, // Program account to own token account
 
     #[account(
-        init_if_needed,
+        mut,
         seeds = [VAULTS_PDA_ACCOUNT, owner.key.as_ref(), &identifier],
         bump,
-        payer = owner,
         token::mint = mint, 
         token::authority = vault_account_owner,
     )]
@@ -65,7 +62,6 @@ pub struct WithdrawLiquidity<'info> {
     pub user_lp: Box<Account<'info, TokenAccount>>,
     /// CHECK:
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(

@@ -50,7 +50,9 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     pub user_token_account: Account<'info, TokenAccount>,
 
     pub vault_program: Program<'info, MercurialVault>,
+    
     pub affiliate_program: Program<'info, Affiliate>,
+
     #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     /// CHECK:
@@ -62,19 +64,18 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     /// CHECK:
     #[account(mut)]
     pub user: UncheckedAccount<'info>,
-    // pub partner: Box<Account<'info, Partner>>,
-    /// CHECK:
-    pub partner: UncheckedAccount<'info>,
+    
+    #[account(mut)]
+    pub partner: Box<Account<'info, Partner>>,
     /// CHECK:
     #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
+    #[account(mut, constraint = user_lp.owner == user.key())] //mint to account of user PDA
     pub user_lp: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 
     #[account(
         mut,
@@ -93,14 +94,6 @@ pub fn handler(
 
     msg!("Balance transfered to vault to be transfered to Meteora: {:?}", balance_transfered_to_vault);
 
-    // let (user_meteora_account, _bump) = Pubkey::find_program_address(
-    //     &[
-    //         &ctx.accounts.partner.key.as_ref(),
-    //         &ctx.accounts.owner.key.as_ref(),
-    //     ],
-    //     &MercurialVault::id(),
-    // );
-
     let data_account = &mut ctx.accounts.data_account.load()?;
 
     return deposit_liquidity(
@@ -108,6 +101,7 @@ pub fn handler(
         &ctx.accounts.partner,
         &ctx.accounts.vault_account,
         data_account,
+        &ctx.accounts.vault_account_owner,
         &ctx.accounts.vault,
         &ctx.accounts.vault_lp_mint,
         &ctx.accounts.user_token,
@@ -116,7 +110,6 @@ pub fn handler(
         &ctx.accounts.token_vault,
         &ctx.accounts.token_program,
         &ctx.accounts.system_program,
-        &ctx.accounts.rent,
         &ctx.program_id,
         &ctx.accounts.vault_program,
         &ctx.accounts.affiliate_program,
