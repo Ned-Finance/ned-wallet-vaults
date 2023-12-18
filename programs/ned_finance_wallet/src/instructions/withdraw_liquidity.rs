@@ -1,9 +1,15 @@
 // use crate::errors::vaults::VaultsAccountsError;
 use crate::state::vaults::{VaultManager, VaultOwner, VAULTS_PDA_DATA, VAULTS_PDA_ACCOUNT, VAULTS_PDA_ACCOUNT_OWNER};
+use affiliate::{
+    cpi::{
+        accounts::DepositWithdrawLiquidity,
+        *,
+    },
+    program::Affiliate,
+    Partner,
+};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Token, Mint};
-use mercurial_vault::cpi::accounts::DepositWithdrawLiquidity;
-use mercurial_vault::cpi::*;
 use mercurial_vault::state::Vault;
 use crate::utils::meteora::MercurialVault;
 
@@ -39,10 +45,10 @@ pub struct WithdrawLiquidity<'info> {
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
-
-    /// CHECK:
     pub vault_program: Program<'info, MercurialVault>,
-    /// CHECK:
+    
+    pub affiliate_program: Program<'info, Affiliate>,
+
     #[account(mut)]
     pub vault: Box<Account<'info, Vault>>,
     /// CHECK:
@@ -54,14 +60,18 @@ pub struct WithdrawLiquidity<'info> {
     /// CHECK:
     #[account(mut)]
     pub user: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub partner: Box<Account<'info, Partner>>,
     /// CHECK:
     #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
     /// CHECK:
-    #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
+    #[account(mut, constraint = user_lp.owner == user.key())] //mint to account of user PDA
     pub user_lp: Box<Account<'info, TokenAccount>>,
-    /// CHECK:
+
     pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(
@@ -77,31 +87,38 @@ pub fn handler(
         let account_found = accounts.iter().find(
             |x| x.pub_key.key() == ctx.accounts.vault_account.key());
 
-        if let Some(account) = account_found {
+        if let Some(vault_account) = account_found {
             msg!("Withdraw started {}", amount);
+            
 
             let accounts = DepositWithdrawLiquidity {
+                
                 vault: ctx.accounts.vault.to_account_info(),
-                lp_mint: ctx.accounts.vault_lp_mint.to_account_info(),
+                owner: ctx.accounts.vault_account_owner.to_account_info(),
                 user_token: ctx.accounts.user_token.to_account_info(),
                 user_lp: ctx.accounts.user_lp.to_account_info(),
                 user: ctx.accounts.user.to_account_info(),
+                vault_lp_mint: ctx.accounts.vault_lp_mint.to_account_info(),
                 token_vault: ctx.accounts.token_vault.to_account_info(),
                 token_program: ctx.accounts.token_program.to_account_info(),
+                vault_program: ctx.accounts.vault_program.to_account_info(),
+                partner: ctx.accounts.partner.to_account_info(),
             };
 
-            let (_account, bump) =
-                Pubkey::find_program_address(&[
-                    VAULTS_PDA_ACCOUNT_OWNER,  
-                    ctx.accounts.owner.key.as_ref(), 
-                    &account.identifier
-                ], ctx.program_id);
+            let (_account, bump) = Pubkey::find_program_address(
+                &[
+                    VAULTS_PDA_ACCOUNT_OWNER,
+                    ctx.accounts.owner.key.as_ref(),
+                    &vault_account.identifier,
+                ],
+                ctx.program_id,
+            );
 
             let seeds = &[
-                VAULTS_PDA_ACCOUNT_OWNER, 
+                VAULTS_PDA_ACCOUNT_OWNER,
                 ctx.accounts.owner.key.as_ref(),
-                &account.identifier,
-                &[bump]
+                &vault_account.identifier,
+                &[bump],
             ];
 
             // &[&[&[u8]]]

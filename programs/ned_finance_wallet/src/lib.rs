@@ -11,7 +11,7 @@ use crate::state::vaults::SpareType;
 declare_id!("NEDXqFFWdkRYUE9oRRAteiS22tXDvBiSZgNcGn9G5QA");
 
 #[program]
-pub mod ned_wallet_vaults {
+pub mod ned_finance_wallet {
 
     use super::*;
 
