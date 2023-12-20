@@ -42,13 +42,6 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     )]
     pub vault_account: Account<'info, TokenAccount>,
 
-    #[account(
-        mut,
-        token::mint = mint, 
-        token::authority = owner,
-    )]
-    pub user_token_account: Account<'info, TokenAccount>,
-
     pub vault_program: Program<'info, MercurialVault>,
     
     pub affiliate_program: Program<'info, Affiliate>,

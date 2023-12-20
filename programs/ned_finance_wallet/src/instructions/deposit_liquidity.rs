@@ -63,7 +63,7 @@ pub struct DepositLiquidity<'info> {
     #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
     
-    #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
+    #[account(mut, constraint = user_lp.owner == user.key())] //mint to account of user PDA
     pub user_lp: Box<Account<'info, TokenAccount>>,
     
     pub token_program: Program<'info, Token>,

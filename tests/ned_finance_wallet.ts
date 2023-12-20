@@ -420,15 +420,43 @@ describe("ned_finance_wallet", () => {
         }
     });
 
-    xit("deposit liquidity from Ned vault", async () => {
+    it("deposit liquidity from Ned vault", async () => {
         try {
+            const partnerATA = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                provider.wallet.payer,
+                mint,
+                partnerAccount
+            );
+
+            const [partnerPda] = PublicKey.findProgramAddressSync(
+                [vault.toBuffer(), partnerATA.address.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            console.log("vault:", vault.toBase58());
+            console.log("partnerATA:", partnerATA.address.toBase58());
+            console.log("meteoraAfilliateProgram:", meteoraAfilliateProgram.toBase58());
+            console.log("==============================================");
+
+            const [userMeteoraPda] = PublicKey.findProgramAddressSync(
+                [partnerPda.toBuffer(), savingsVault.ownerPubKey.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            console.log("partnerPda:", partnerPda.toBase58());
+            console.log("savingsVault.ownerPubKey:", savingsVault.ownerPubKey.toBase58());
+            console.log("userMeteoraPda:", userMeteoraPda.toBase58());
+
             const userLpToken = await getOrCreateAssociatedTokenAccount(
                 connection,
                 provider.wallet.payer,
                 vaultLpMint,
-                savingsVault.ownerPubKey,
+                userMeteoraPda,
                 true
             );
+            console.log("userLpToken address", userLpToken.address.toBase58());
+            console.log("userLpToken balance", userLpToken.amount);
 
             const accounts = {
                 owner: provider.publicKey,
@@ -437,10 +465,12 @@ describe("ned_finance_wallet", () => {
                 vaultAccountOwner: savingsVault.ownerPubKey,
                 mint,
                 vaultProgram: meteoraVaultProgram,
+                affiliateProgram: meteoraAfilliateProgram,
                 vault,
                 tokenVault,
                 vaultLpMint,
-                user: savingsVault.ownerPubKey,
+                user: userMeteoraPda,
+                partner: partnerPda,
                 userToken: savingsVault.pubKey,
                 userLp: userLpToken.address,
                 tokenProgram: TOKEN_PROGRAM_ID,
@@ -678,7 +708,7 @@ describe("ned_finance_wallet", () => {
         assert.isTrue(availableSpots <= 20); // Only 20 accounts max are allowed, check program
     });
 
-    xit("Update Ned account vault", async () => {
+    it("Update Ned account vault", async () => {
         try {
             accountName = "New account" + (Math.random() + 1).toString(36).substring(2);
             accountNameBuffer = Buffer.from(accountName);
