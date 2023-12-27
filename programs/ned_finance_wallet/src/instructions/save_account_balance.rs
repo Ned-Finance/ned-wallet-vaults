@@ -19,7 +19,7 @@ pub struct SaveAccountBalanceOnLedger<'info> {
 
     #[account(
         init_if_needed,
-        seeds = [LEDGER_PDA_DATA, owner.key.as_ref()],
+        seeds = [LEDGER_PDA_DATA],
         bump,
         payer = owner,
         space = LedgerStore::SIZE // extra data to store, not defined yet

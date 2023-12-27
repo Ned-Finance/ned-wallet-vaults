@@ -72,7 +72,7 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
 
     #[account(
         mut,
-        seeds = [LEDGER_PDA_DATA, owner.key.as_ref()],
+        seeds = [LEDGER_PDA_DATA],
         bump,
     )]
     pub ledger_data: Account<'info, LedgerStore>, 

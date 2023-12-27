@@ -75,10 +75,7 @@ describe("ned_finance_wallet", () => {
     );
     // End Meteora
 
-    const [ledgerData] = PublicKey.findProgramAddressSync(
-        [LEDGER_PDA_DATA, provider.publicKey.toBuffer()],
-        program.programId
-    );
+    const [ledgerData] = PublicKey.findProgramAddressSync([LEDGER_PDA_DATA], program.programId);
 
     before(async () => {
         mint = !tokenToMint
