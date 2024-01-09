@@ -39,26 +39,6 @@ pub fn name_is_empty(name: &Vec<u8>) -> bool {
     return name_with_chars.is_none();
 }
 
-// #[account(mut)]
-//     pub vault: Box<Account<'info, Vault>>,
-//     /// CHECK:
-//     #[account(mut)]
-//     pub token_vault: UncheckedAccount<'info>,
-//     /// CHECK:
-//     #[account(mut)]
-//     pub vault_lp_mint: Box<Account<'info, Mint>>,
-//     /// CHECK:
-//     #[account(mut)]
-//     pub user: UncheckedAccount<'info>,
-//     /// CHECK:
-//     #[account(mut)]
-//     pub user_token: UncheckedAccount<'info>,
-//     /// CHECK:
-//     #[account(mut, constraint = user_lp.owner == vault_account_owner.key())] //mint to account of user PDA
-//     pub user_lp: Box<Account<'info, TokenAccount>>,
-//     /// CHECK:
-//     pub token_program: Program<'info, Token>,
-
 pub fn deposit_liquidity<'info>(
     owner: &Signer<'info>,
     partner: &Box<Account<'info, Partner>>,
@@ -79,8 +59,6 @@ pub fn deposit_liquidity<'info>(
     _identifier: [u8; 22],
     amount: u64,
 ) -> Result<()> {
-    // let vault_account = &ctx.accounts.vault_account;
-    // let data_account = &mut ctx.accounts.data_account.load()?;
     if data_account.owner.key() == owner.key() {
         let accounts = &data_account.accounts;
 
@@ -91,12 +69,6 @@ pub fn deposit_liquidity<'info>(
         if let Some(vault_account) = account_found {
             if vault_account.earnings_enabled == 1 {
                 msg!("Deposit started {}", amount);
-
-                // return Ok(());
-
-                // let deposit_withdraw_to_meteora = || {
-
-                // };
 
                 if user.lamports() == 0 {
                     msg!("User account not initialized");
@@ -124,7 +96,6 @@ pub fn deposit_liquidity<'info>(
                     }
                 } else {
                     msg!("User account is initialized");
-                    // return deposit_withdraw_to_meteora();
                 }
 
                 let (_account, bump) = Pubkey::find_program_address(

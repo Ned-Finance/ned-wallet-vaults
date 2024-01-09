@@ -109,5 +109,4 @@ pub fn handler(
         _identifier,
         balance_transfered_to_vault
     );
-    // Ok(())
 }
