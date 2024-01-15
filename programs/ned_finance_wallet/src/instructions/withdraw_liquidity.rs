@@ -64,9 +64,6 @@ pub struct WithdrawLiquidity<'info> {
     #[account(mut)]
     pub partner: Box<Account<'info, Partner>>,
     /// CHECK:
-    #[account(mut)]
-    pub user_token: UncheckedAccount<'info>,
-    /// CHECK:
     #[account(mut, constraint = user_lp.owner == user.key())] //mint to account of user PDA
     pub user_lp: Box<Account<'info, TokenAccount>>,
 
@@ -95,7 +92,7 @@ pub fn handler(
                 
                 vault: ctx.accounts.vault.to_account_info(),
                 owner: ctx.accounts.vault_account_owner.to_account_info(),
-                user_token: ctx.accounts.user_token.to_account_info(),
+                user_token: ctx.accounts.vault_account.to_account_info(),
                 user_lp: ctx.accounts.user_lp.to_account_info(),
                 user: ctx.accounts.user.to_account_info(),
                 vault_lp_mint: ctx.accounts.vault_lp_mint.to_account_info(),

@@ -27,7 +27,7 @@ pub struct VaultAccount {
 }
 
 impl VaultAccount {
-    pub const EXTRA_SPACE: usize = 128;
+    pub const EXTRA_SPACE: usize = 8;
     pub const SIZE: usize = 30 + 1 + 32 + 32 + 32 + 1 + 1 + 1 + 22 + VaultAccount::EXTRA_SPACE;
 }
 

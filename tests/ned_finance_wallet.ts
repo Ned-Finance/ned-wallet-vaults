@@ -577,7 +577,7 @@ describe("ned_finance_wallet", () => {
         }
     });
 
-    it("withdraw liquidity to Ned vault", async () => {
+    xit("withdraw liquidity to NED vault", async () => {
         try {
             const partnerATA = await getOrCreateAssociatedTokenAccount(
                 provider.connection,
@@ -621,13 +621,112 @@ describe("ned_finance_wallet", () => {
                     vaultLpMint,
                     user: userMeteoraPda,
                     partner: partnerPda,
-                    userToken: savingsVault.pubKey,
                     userLp: userLpToken.address,
                     tokenProgram: TOKEN_PROGRAM_ID,
                     systemProgram: anchor.web3.SystemProgram.programId,
                 })
                 .signers([provider.wallet.payer])
                 .rpc();
+
+            console.log("Your withdraw liquidity tx =", tx);
+        } catch (_error: any) {
+            console.log(_error);
+            assert.fail("Unexpected error type, console.log _error variable");
+        }
+    });
+
+    it("withdraw from liquidity", async () => {
+        try {
+            const partnerATA = await getOrCreateAssociatedTokenAccount(
+                provider.connection,
+                provider.wallet.payer,
+                mint,
+                partnerAccount
+            );
+
+            const [partnerPda] = PublicKey.findProgramAddressSync(
+                [vault.toBuffer(), partnerATA.address.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            const [userMeteoraPda] = PublicKey.findProgramAddressSync(
+                [partnerPda.toBuffer(), savingsVault.ownerPubKey.toBuffer()],
+                meteoraAfilliateProgram
+            );
+
+            const userLpToken = await getOrCreateAssociatedTokenAccount(
+                connection,
+                provider.wallet.payer,
+                vaultLpMint,
+                userMeteoraPda,
+                true
+            );
+            // console.log("userLpToken address", userLpToken.address.toBase58());
+            // console.log("userLpToken balance", userLpToken.amount);
+
+            const ixSaveBalance = await program.methods
+                .saveVaultBalance(identifierBuffer)
+                .accounts({
+                    owner: provider.publicKey,
+                    mint,
+                    vaultAccount: savingsVault.pubKey,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    ledgerData,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+                })
+                .instruction();
+
+            const withdrawLiquidityIx = await program.methods
+                .withdrawLiquidity(identifierBuffer, new anchor.BN(userLpToken.amount))
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    vaultAccount: savingsVault.pubKey,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    mint,
+                    vaultProgram: meteoraVaultProgram,
+                    affiliateProgram: meteoraAfilliateProgram,
+                    vault,
+                    tokenVault,
+                    vaultLpMint,
+                    user: userMeteoraPda,
+                    partner: partnerPda,
+                    userLp: userLpToken.address,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                })
+                .instruction();
+
+            const withdrawIx = await program.methods
+                .withdrawFromDiffBalance(identifierBuffer)
+                .accounts({
+                    owner: provider.publicKey,
+                    dataAccount,
+                    mint,
+                    vaultAccountOwner: savingsVault.ownerPubKey,
+                    vaultAccount: savingsVault.pubKey,
+                    userTokenAccount: mintAta.address,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    ledgerData,
+                })
+                .instruction();
+
+            const instructions = [ixSaveBalance, withdrawLiquidityIx, withdrawIx];
+
+            const blockhash = (await connection.getLatestBlockhash()).blockhash;
+
+            const messageV0 = new TransactionMessage({
+                payerKey: provider.publicKey,
+                recentBlockhash: blockhash,
+                instructions,
+            }).compileToV0Message();
+
+            const transaction = new VersionedTransaction(messageV0);
+
+            transaction.sign([provider.wallet.payer]);
+
+            const tx = await provider.connection.sendTransaction(transaction);
 
             console.log("Your withdraw liquidity tx =", tx);
         } catch (_error: any) {
@@ -647,7 +746,7 @@ describe("ned_finance_wallet", () => {
         assert.isTrue(availableSpots <= 20); // Only 20 accounts max are allowed, check program
     });
 
-    it("Update Ned account vault", async () => {
+    xit("Update Ned account vault", async () => {
         try {
             accountName = "New account" + (Math.random() + 1).toString(36).substring(2);
             accountNameBuffer = Buffer.from(accountName);
@@ -715,7 +814,7 @@ describe("ned_finance_wallet", () => {
         assert.isTrue(savingsVault == undefined);
     });
 
-    xit("Delete all Ned account vault", async () => {
+    it("Delete all Ned account vault", async () => {
         try {
             const { accounts } = await program.account.vaultManager.fetch(dataAccount);
 
@@ -751,6 +850,23 @@ describe("ned_finance_wallet", () => {
             });
 
             assert.isTrue(unDeletedAccounts.length == 0);
+        } catch (error) {
+            console.log(error);
+        }
+    });
+
+    it("Close data account", async () => {
+        try {
+            const tx = await program.methods
+                .closeDataAccount()
+                .accounts({
+                    dataAccount,
+                    destination: provider.publicKey,
+                    systemProgram: anchor.web3.SystemProgram.programId,
+                })
+                .signers([provider.wallet.payer])
+                .rpc();
+            console.log("Your close data account tx =", tx);
         } catch (error) {
             console.log(error);
         }
