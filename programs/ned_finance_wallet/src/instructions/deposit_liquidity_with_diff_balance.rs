@@ -4,6 +4,7 @@ use affiliate::Partner;
 use affiliate::program::Affiliate;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{TokenAccount, Token, Mint};
+use anchor_spl::associated_token::AssociatedToken;
 use mercurial_vault::state::Vault;
 use crate::utils::meteora::MercurialVault;
 use crate::utils::vaults::deposit_liquidity;
@@ -64,11 +65,17 @@ pub struct DepositLiquidityWithDiffBalance<'info> {
     #[account(mut)]
     pub user_token: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = user_lp.owner == user.key())] //mint to account of user PDA
+    #[account(
+        init_if_needed, 
+        payer = owner,
+        associated_token::mint = vault_lp_mint,
+        associated_token::authority = user
+    )] 
     pub user_lp: Box<Account<'info, TokenAccount>>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
 
     #[account(
         mut,

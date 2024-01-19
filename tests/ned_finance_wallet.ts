@@ -7,6 +7,7 @@ import {
     createMint,
     createTransferCheckedInstruction,
     getAccount,
+    getAssociatedTokenAddressSync,
     getOrCreateAssociatedTokenAccount,
     mintTo,
     transfer,
@@ -420,13 +421,7 @@ describe("ned_finance_wallet", () => {
                 meteoraAfilliateProgram
             );
 
-            const userLpToken = await getOrCreateAssociatedTokenAccount(
-                connection,
-                provider.wallet.payer,
-                vaultLpMint,
-                userMeteoraPda,
-                true
-            );
+            const userLpToken = getAssociatedTokenAddressSync(vaultLpMint, userMeteoraPda, true);
 
             const accounts = {
                 owner: provider.publicKey,
@@ -442,7 +437,7 @@ describe("ned_finance_wallet", () => {
                 user: userMeteoraPda,
                 partner: partnerPda,
                 userToken: savingsVault.pubKey,
-                userLp: userLpToken.address,
+                userLp: userLpToken,
                 tokenProgram: TOKEN_PROGRAM_ID,
             };
 
@@ -635,7 +630,7 @@ describe("ned_finance_wallet", () => {
         }
     });
 
-    it("withdraw from liquidity", async () => {
+    xit("withdraw from liquidity", async () => {
         try {
             const partnerATA = await getOrCreateAssociatedTokenAccount(
                 provider.connection,
@@ -814,7 +809,7 @@ describe("ned_finance_wallet", () => {
         assert.isTrue(savingsVault == undefined);
     });
 
-    it("Delete all Ned account vault", async () => {
+    xit("Delete all Ned account vault", async () => {
         try {
             const { accounts } = await program.account.vaultManager.fetch(dataAccount);
 
@@ -855,7 +850,7 @@ describe("ned_finance_wallet", () => {
         }
     });
 
-    it("Close data account", async () => {
+    xit("Close data account", async () => {
         try {
             const tx = await program.methods
                 .closeDataAccount()

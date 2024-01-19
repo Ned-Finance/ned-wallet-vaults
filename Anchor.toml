@@ -13,7 +13,8 @@ url = "https://api.apr.dev"
 
 [provider]
 cluster = "https://devnet.helius-rpc.com/?api-key=be1f775e-5cb5-4e93-8f5d-02a2cf9b2261"
-wallet = "/Users/marco/.config/solana/id.json"
+#wallet = "/Users/marco/.config/solana/id.json"
+wallet = "/Users/marco/repositories/NED/ned-finance-wallet-program/PQVJsYCaWidom51wdDWZxGkSY57Cog53mruBtRvyDWn.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
